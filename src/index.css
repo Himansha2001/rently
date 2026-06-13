@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-stone-50 text-stone-900 font-sans antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent;
+  }
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
+
+/* Keep Leaflet layers inside the map card so they don't paint over the footer */
+.listings-map {
+  isolation: isolate;
+}
+
+.listings-map .leaflet-container,
+.listings-map .leaflet-pane,
+.listings-map .leaflet-top,
+.listings-map .leaflet-bottom,
+.listings-map .leaflet-control {
+  z-index: 1 !important;
+}
