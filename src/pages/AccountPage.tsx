@@ -14,7 +14,6 @@ import { useAuthStore } from '@/store/authStore'
 import { useListingStore } from '@/store/listingStore'
 import { useMessageStore } from '@/store/messageStore'
 import { useSavedStore } from '@/store/savedStore'
-import { listingRepository } from '@/data'
 import { formatLKRMonthly } from '@/lib/format'
 import type { AccountTab, Listing } from '@/types'
 import { cn } from '@/lib/utils'
@@ -47,6 +46,8 @@ export default function AccountPage() {
 
   const { fetchByOwner } = useListingStore()
   const getSavedIds = useSavedStore(s => s.getSavedIds)
+  const getSavedListings = useSavedStore(s => s.getSavedListings)
+  const syncSaved = useSavedStore(s => s.sync)
 
   const [myListings, setMyListings] = useState<Listing[]>([])
   const [savedListings, setSavedListings] = useState<Listing[]>([])
@@ -83,12 +84,11 @@ export default function AccountPage() {
       setLoadingSaved(false)
       return
     }
-    const ids = getSavedIds(user.id)
-    Promise.all(ids.map(id => listingRepository.getById(id))).then(results => {
-      setSavedListings(results.filter((l): l is Listing => l !== null))
+    syncSaved(user.id).then(() => {
+      setSavedListings(getSavedListings(user.id))
       setLoadingSaved(false)
     })
-  }, [user, getSavedIds, tab])
+  }, [user, getSavedListings, syncSaved, tab])
 
   if (!hydrated || !user) {
     return <AccountLoading />
@@ -96,10 +96,10 @@ export default function AccountPage() {
 
   const totalViews = myListings.reduce((sum, l) => sum + l.views, 0)
 
-  const handleProfileSave = (e: React.FormEvent) => {
+  const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!renterMode && !landlordMode) return
-    updateProfile({
+    await updateProfile({
       name: profileName,
       phone: profilePhone,
       isRenter: renterMode,
@@ -194,7 +194,7 @@ export default function AccountPage() {
                           <div>
                             <p className="text-sm text-stone-500">Active listings</p>
                             <p className="text-2xl font-bold text-stone-900">
-                              {myListings.filter(l => l.status === 'active').length}
+                              {myListings.filter(l => l.status === 'approved' || l.status === 'active').length}
                             </p>
                           </div>
                         </CardContent>
@@ -280,9 +280,12 @@ export default function AccountPage() {
                             <p className="text-primary-700 font-medium">
                               {formatLKRMonthly(listing.price)}
                             </p>
-                            <Badge variant={listing.status === 'active' ? 'verified' : 'muted'}>
+                            <Badge variant={listing.status === 'approved' || listing.status === 'active' ? 'verified' : 'muted'}>
                               {listing.status}
                             </Badge>
+                            {listing.rejectionReason && (
+                              <p className="text-xs text-red-500 mt-1">{listing.rejectionReason}</p>
+                            )}
                           </div>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" asChild>

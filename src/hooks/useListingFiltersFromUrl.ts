@@ -14,7 +14,11 @@ export function useListingFiltersFromUrl(): ListingFilters {
       minPrice: params.get('minPrice') ? Number(params.get('minPrice')) : undefined,
       maxPrice: params.get('maxPrice') ? Number(params.get('maxPrice')) : undefined,
       minBedrooms: params.get('beds') ? Number(params.get('beds')) : undefined,
+      minBathrooms: params.get('baths') ? Number(params.get('baths')) : undefined,
       verifiedOnly: params.get('verified') === '1',
+      lat: params.get('lat') ? Number(params.get('lat')) : undefined,
+      lng: params.get('lng') ? Number(params.get('lng')) : undefined,
+      radiusKm: params.get('radiusKm') ? Number(params.get('radiusKm')) : undefined,
     }
   }, [params])
 }

@@ -1,4 +1,4 @@
-import { mockListingRepository } from '@/data/repositories/mockListingRepository'
+import { backendListingRepository } from '@/data/repositories/backendListingRepository'
 
-/** Swap to firebaseListingRepository when Firebase phase 2 is ready */
-export const listingRepository = mockListingRepository
+/** Production data source: Node/NestJS API backed by MongoDB. */
+export const listingRepository = backendListingRepository

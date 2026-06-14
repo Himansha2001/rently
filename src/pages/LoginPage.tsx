@@ -29,7 +29,6 @@ export default function LoginPage() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { email: 'demo@rently.lk', password: 'demo123' },
   })
 
   const onSubmit = async (data: FormData) => {
@@ -83,9 +82,6 @@ export default function LoginPage() {
                 )}
               </div>
               {error && <p className="text-red-500 text-sm">{error}</p>}
-              <p className="text-xs text-stone-500 bg-stone-50 rounded-lg p-3">
-                Demo: any email/password works. Firebase Auth connects in phase 2.
-              </p>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign in'}
               </Button>

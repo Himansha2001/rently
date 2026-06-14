@@ -1,99 +1,66 @@
-# Rently — Premium Property Rentals (Sri Lanka)
+# Rently
 
-A premium, fast, animated frontend for discovering and listing rental properties across Sri Lanka.
+Rently is a production property rental marketplace for Sri Lanka. The frontend is a React/Vite application and the backend foundation is a NestJS API using MongoDB for marketplace data and Firebase Authentication for identity only.
 
-## Stack
+## Current Stack
 
-- **React 19** + **TypeScript** + **Vite 8**
-- **Tailwind CSS 3** — teal/gold brand system
-- **Framer Motion** — page transitions, scroll reveals
-- **shadcn-style UI** — Radix primitives + CVA
-- **Zustand** — auth & listing state
-- **React Leaflet** — maps (OpenStreetMap)
-- **Mock data layer** — swap to Firebase in phase 2
+- Frontend: React, TypeScript, Vite, Tailwind CSS, Framer Motion, Zustand, React Router, React Hook Form, Zod, React Leaflet.
+- Backend: Node.js, NestJS, TypeScript, MongoDB, Mongoose.
+- Auth: Firebase Authentication client SDK on the frontend and Firebase Admin SDK token verification on the backend.
+- Database: MongoDB. Do not use Firestore for Rently marketplace data.
 
-## Getting started
+## Local Setup
+
+Frontend:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Backend:
 
 ```bash
-npm run build    # production build
-npm run preview  # preview production build
+npm --prefix server install
+npm --prefix server run dev
 ```
 
-## Routes
+Frontend runs on `http://localhost:5173` by default. Backend runs on `http://localhost:3000/api` by default.
+
+## Environment
+
+Copy examples locally and fill real values. Do not commit real `.env` files.
+
+- Frontend: `.env.example`
+- Backend: `server/.env.example`
+
+## Main Routes
 
 | Route | Description |
-|-------|-------------|
-| `/` | Home — hero search, featured listings |
-| `/listings` | Browse with filters + map toggle |
-| `/listings/:id` | Listing detail + gallery |
-| `/listings/new` | Create listing wizard (auth required) |
-| `/dashboard` | Landlord dashboard (auth required) |
-| `/login`, `/register` | Auth UI (mock) |
+| --- | --- |
+| `/` | Home and search entry |
+| `/listings` | Browse approved listings with filters, map, and radius search |
+| `/listings/:id` | Listing detail with sanitized public contact handling |
+| `/listings/new` | Authenticated listing creation with map pin |
+| `/account` | User dashboard, messages, listings, saved homes, profile |
+| `/admin` | Admin moderation queue |
+| `/login`, `/register` | Firebase Auth UI |
 | `/about` | About Rently |
 
-**Demo login:** any email + password (6+ chars). Dashboard shows listings for demo user `u1`.
+## Business Rules
 
-## Firebase (Phase 2)
+- Public visitors can browse approved listings.
+- Contact details require login.
+- Every registered account starts as `user`.
+- Any registered user can create a listing.
+- Creating a first listing promotes the user to `landlord`.
+- Admin approval is required before a listing becomes publicly active.
+- Admin role is not self-assignable from the frontend.
+- In-app messaging and saved listings are backend-backed.
+- Radius search uses MongoDB geospatial queries.
+- Firebase is auth only.
+- MySQL is reserved for future clearly justified needs.
 
-Firebase is recommended for ~10k users. To integrate:
+## Documentation
 
-1. `npm install firebase`
-2. `firebase init` — Hosting, Firestore, Storage, Auth
-3. Add `.env.local`:
-
-   ```
-   VITE_FIREBASE_API_KEY=
-   VITE_FIREBASE_AUTH_DOMAIN=
-   VITE_FIREBASE_PROJECT_ID=
-   VITE_FIREBASE_STORAGE_BUCKET=
-   VITE_FIREBASE_MESSAGING_SENDER_ID=
-   VITE_FIREBASE_APP_ID=
-   ```
-
-4. Implement `src/data/repositories/firebaseListingRepository.ts`
-5. Change `src/data/index.ts` to export `firebaseListingRepository`
-
-### Firestore schema (sketch)
-
-```
-users/{userId}
-listings/{listingId}
-listings/{listingId}/inquiries/{inquiryId}
-```
-
-### Security rules (sketch)
-
-- Public read: `listings` where `status == 'active'`
-- Write: authenticated owner only on their listings
-
-### Scale notes (10k users)
-
-- Use auto-generated document IDs
-- Paginate listing queries; avoid unbounded listeners
-- Store images in Cloud Storage with CDN
-- Consider Algolia/Typesense for full-text search later
-- Firestore region: `asia-south1` or multi-region for HA
-
-## Project structure
-
-```
-src/
-├── components/   # UI, layout, listings, home, map
-├── data/         # mock data + repository pattern
-├── hooks/
-├── lib/          # utils, motion, formatLKR
-├── pages/
-├── store/
-└── types/
-```
-
-## License
-
-Private — Code Media
+See [docs/README.md](./docs/README.md) for architecture, API, database, auth, moderation, radius search, deployment notes, and Mermaid diagrams.

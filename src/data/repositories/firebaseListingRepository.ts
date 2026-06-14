@@ -1,19 +1,14 @@
 import type { ListingRepository } from '@/data/repositories/listingRepository'
 
 /**
- * Phase 2: Firebase Firestore implementation.
- * Replace mockListingRepository in src/data/index.ts when Firebase is configured.
- *
- * Setup checklist:
- * 1. npm install firebase
- * 2. firebase init (Firestore, Storage, Auth, Hosting)
- * 3. Add VITE_FIREBASE_* env vars to .env.local
- * 4. Implement CRUD against listings/{listingId} collection
- * 5. Upload images to Cloud Storage, store URLs in listing doc
+ * Legacy placeholder retained only to avoid breaking old imports.
+ * Rently uses Firebase Authentication only. Do not implement listing data with
+ * Firestore, Firebase Storage, Realtime Database, or Cloud Functions.
+ * Production listing data lives behind the NestJS/MongoDB API repository.
  */
 export const firebaseListingRepository: ListingRepository = {
   async getAll() {
-    throw new Error('Firebase not configured. Use mockListingRepository in phase 1.')
+    throw new Error('Firebase listing data is not supported. Use backendListingRepository.')
   },
   async getById() {
     throw new Error('Firebase not configured.')

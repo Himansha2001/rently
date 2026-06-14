@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -30,6 +30,9 @@ const schema = z.object({
   bedrooms: z.number().min(0),
   bathrooms: z.number().min(1),
   areaSqFt: z.number().optional(),
+  contactName: z.string().min(2, 'Contact name is required'),
+  contactPhone: z.string().min(7, 'Contact phone is required'),
+  contactEmail: z.string().email('Enter a valid email').optional().or(z.literal('')),
 })
 
 type FormData = z.infer<typeof schema>
@@ -45,8 +48,9 @@ export default function CreateListingPage() {
   const [step, setStep] = useState(0)
   const [amenities, setAmenities] = useState<string[]>([])
   const [submitted, setSubmitted] = useState(false)
+  const [locationPinned, setLocationPinned] = useState(false)
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user, refreshProfile } = useAuthStore()
   const { create } = useListingStore()
 
   const form = useForm<FormData>({
@@ -59,8 +63,13 @@ export default function CreateListingPage() {
       district: 'Colombo',
       bedrooms: 2,
       bathrooms: 1,
+      contactName: user?.name ?? '',
+      contactPhone: user?.phone ?? '',
+      contactEmail: user?.email ?? '',
     },
   })
+  const pickedLat = useWatch({ control: form.control, name: 'lat' })
+  const pickedLng = useWatch({ control: form.control, name: 'lng' })
 
   const toggleAmenity = (a: string) => {
     setAmenities(prev => (prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]))
@@ -68,22 +77,42 @@ export default function CreateListingPage() {
 
   const onSubmit = async (data: FormData) => {
     if (!user) return
+    if (!locationPinned) {
+      form.setError('lat', { message: 'Pin the property location on the map before submitting.' })
+      setStep(1)
+      return
+    }
     await create(
       {
         ...data,
         propertyType: data.propertyType as PropertyType,
         amenities,
         images: PLACEHOLDER_IMAGES,
+        contactName: data.contactName,
+        contactPhone: data.contactPhone,
+        contactEmail: data.contactEmail || user.email,
       },
       user.id,
     )
+    await refreshProfile()
     setSubmitted(true)
     setTimeout(() => navigate('/account?tab=listings'), 2000)
   }
 
   const nextStep = async () => {
     const fields: (keyof FormData)[][] = [
-      ['title', 'description', 'propertyType', 'price', 'bedrooms', 'bathrooms', 'areaSqFt'],
+      [
+        'title',
+        'description',
+        'propertyType',
+        'price',
+        'bedrooms',
+        'bathrooms',
+        'areaSqFt',
+        'contactName',
+        'contactPhone',
+        'contactEmail',
+      ],
       ['address', 'city', 'district', 'lat', 'lng'],
       [],
     ]
@@ -103,7 +132,7 @@ export default function CreateListingPage() {
             <Check className="w-8 h-8 text-emerald-600" />
           </div>
           <h2 className="font-display text-2xl font-bold mb-2">Listing submitted!</h2>
-          <p className="text-stone-600">Redirecting to your dashboard...</p>
+          <p className="text-stone-600">Your listing is pending admin approval.</p>
         </motion.div>
       </div>
     )
@@ -213,6 +242,26 @@ export default function CreateListingPage() {
                         ))}
                       </div>
                     </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="contactName">Contact name</Label>
+                        <Input id="contactName" {...form.register('contactName')} />
+                        {form.formState.errors.contactName && (
+                          <p className="text-red-500 text-xs mt-1">{form.formState.errors.contactName.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="contactPhone">Contact phone</Label>
+                        <Input id="contactPhone" {...form.register('contactPhone')} placeholder="+94 77 123 4567" />
+                        {form.formState.errors.contactPhone && (
+                          <p className="text-red-500 text-xs mt-1">{form.formState.errors.contactPhone.message}</p>
+                        )}
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="contactEmail">Contact email</Label>
+                        <Input id="contactEmail" type="email" {...form.register('contactEmail')} />
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -255,14 +304,23 @@ export default function CreateListingPage() {
                       <Label>Pin on map (click to set location)</Label>
                       <Suspense fallback={<div className="h-64 bg-stone-200 rounded-xl animate-pulse" />}>
                         <LocationPicker
-                          lat={form.watch('lat')}
-                          lng={form.watch('lng')}
+                          lat={pickedLat}
+                          lng={pickedLng}
                           onChange={(lat, lng) => {
                             form.setValue('lat', lat)
                             form.setValue('lng', lng)
+                            setLocationPinned(true)
                           }}
                         />
                       </Suspense>
+                      {!locationPinned && (
+                        <p className="text-amber-700 text-sm mt-2">
+                          Click the map to confirm the exact property location.
+                        </p>
+                      )}
+                      {form.formState.errors.lat && (
+                        <p className="text-red-500 text-sm mt-2">{form.formState.errors.lat.message}</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -285,7 +343,7 @@ export default function CreateListingPage() {
                       <Upload className="w-10 h-10 text-stone-400 mx-auto mb-3" />
                       <p className="text-stone-600 font-medium mb-1">Drag & drop photos here</p>
                       <p className="text-stone-400 text-sm mb-4">
-                        Demo mode uses placeholder images. Firebase Storage in phase 2.
+                        MVP stores image URLs only. Object storage can be added later.
                       </p>
                       <div className="grid grid-cols-2 gap-2 max-w-xs mx-auto">
                         {PLACEHOLDER_IMAGES.map(img => (

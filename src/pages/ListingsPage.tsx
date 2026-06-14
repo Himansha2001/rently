@@ -37,7 +37,11 @@ export default function ListingsPage() {
       if (next.minPrice) params.set('minPrice', String(next.minPrice))
       if (next.maxPrice) params.set('maxPrice', String(next.maxPrice))
       if (next.minBedrooms) params.set('beds', String(next.minBedrooms))
+      if (next.minBathrooms) params.set('baths', String(next.minBathrooms))
       if (next.verifiedOnly) params.set('verified', '1')
+      if (next.lat != null) params.set('lat', String(next.lat))
+      if (next.lng != null) params.set('lng', String(next.lng))
+      if (next.radiusKm != null) params.set('radiusKm', String(next.radiusKm))
       setSearchParams(params, { replace: true })
     },
     [setSearchParams],

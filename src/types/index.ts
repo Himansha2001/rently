@@ -6,7 +6,16 @@ export type PropertyType =
   | 'house'
   | 'commercial'
 
-export type ListingStatus = 'active' | 'pending' | 'rented' | 'draft'
+export type ListingStatus =
+  | 'active'
+  | 'draft'
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'archived'
+  | 'rented'
+
+export type UserRole = 'user' | 'landlord' | 'admin'
 
 export interface Listing {
   id: string
@@ -14,11 +23,14 @@ export interface Listing {
   description: string
   propertyType: PropertyType
   price: number
+  currency?: string
   address: string
   city: string
   district: string
+  province?: string
   lat: number
   lng: number
+  distanceKm?: number
   bedrooms: number
   bathrooms: number
   areaSqFt?: number
@@ -30,9 +42,14 @@ export interface Listing {
   views: number
   ownerId: string
   ownerName: string
-  ownerPhone: string
+  ownerPhone?: string
+  contactName?: string
+  contactPhone?: string
+  contactEmail?: string
+  rejectionReason?: string
   createdAt: string
   updatedAt: string
+  approvedAt?: string
 }
 
 /** Users can rent and list — preferences only affect dashboard defaults */
@@ -44,8 +61,11 @@ export interface User {
   avatar?: string
   /** @deprecated use isRenter / isLandlord */
   role?: 'tenant' | 'landlord' | 'admin'
+  roles?: UserRole[]
   isRenter: boolean
   isLandlord: boolean
+  isEmailVerified?: boolean
+  status?: 'active' | 'suspended' | 'deleted'
 }
 
 export interface Conversation {
@@ -77,7 +97,12 @@ export interface ListingFilters {
   minPrice?: number
   maxPrice?: number
   minBedrooms?: number
+  minBathrooms?: number
   verifiedOnly?: boolean
+  featuredOnly?: boolean
+  lat?: number
+  lng?: number
+  radiusKm?: number
 }
 
 export interface CreateListingInput {
@@ -85,9 +110,11 @@ export interface CreateListingInput {
   description: string
   propertyType: PropertyType
   price: number
+  currency?: string
   address: string
   city: string
   district: string
+  province?: string
   lat: number
   lng: number
   bedrooms: number
@@ -95,4 +122,7 @@ export interface CreateListingInput {
   areaSqFt?: number
   amenities: string[]
   images: string[]
+  contactName?: string
+  contactPhone?: string
+  contactEmail?: string
 }

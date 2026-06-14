@@ -108,6 +108,9 @@ export default function RegisterPage() {
                     List my property
                   </label>
                 </div>
+                <p className="text-xs text-stone-500 mt-2">
+                  All accounts start as users. Creating your first listing enables landlord tools.
+                </p>
               </div>
               <Button
                 type="submit"

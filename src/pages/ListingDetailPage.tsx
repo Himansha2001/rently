@@ -34,11 +34,16 @@ export default function ListingDetailPage() {
   const openConversation = useMessageStore(s => s.openConversationForListing)
   const toggleSaved = useSavedStore(s => s.toggle)
   const isSaved = useSavedStore(s => s.isSaved)
+  const syncSaved = useSavedStore(s => s.sync)
 
   useEffect(() => {
     if (id) fetchById(id)
     return () => clearCurrent()
   }, [id, fetchById, clearCurrent])
+
+  useEffect(() => {
+    if (user) void syncSaved(user.id)
+  }, [user, syncSaved])
 
   if (loading) {
     return (
@@ -74,8 +79,9 @@ export default function ListingDetailPage() {
 
   const isOwner = user?.id === listing.ownerId
   const saved = user ? isSaved(user.id, listing.id) : false
+  const canViewContact = isAuthenticated && Boolean(listing.ownerPhone)
 
-  const handleMessage = () => {
+  const handleMessage = async () => {
     if (!isAuthenticated || !user) {
       navigate('/login', { state: { from: location } })
       return
@@ -84,7 +90,7 @@ export default function ListingDetailPage() {
       navigate('/account?tab=messages')
       return
     }
-    const convId = openConversation(listing, user.id, user.name)
+    const convId = await openConversation(listing, user.id, user.name)
     navigate(`/account?tab=messages&c=${convId}`)
   }
 
@@ -190,17 +196,36 @@ export default function ListingDetailPage() {
                     <Link to="/account?tab=messages">View inquiries</Link>
                   </Button>
                 )}
-                <Button variant="outline" className="w-full" size="lg" asChild>
-                  <a href={`tel:${listing.ownerPhone}`}>
+                {canViewContact ? (
+                  <Button variant="outline" className="w-full" size="lg" asChild>
+                    <a href={`tel:${listing.ownerPhone}`}>
+                      <Phone className="w-4 h-4" />
+                      Call {isOwner ? 'your listing' : 'landlord'}
+                    </a>
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
+                    onClick={() => navigate('/login', { state: { from: location } })}
+                  >
                     <Phone className="w-4 h-4" />
-                    Call {isOwner ? 'your listing' : 'landlord'}
-                  </a>
-                </Button>
+                    Sign in to view contact
+                  </Button>
+                )}
               </div>
 
               <div className="border-t border-stone-100 pt-4">
                 <p className="text-sm text-stone-500 mb-1">Listed by</p>
-                <p className="font-semibold text-stone-900">{listing.ownerName}</p>
+                <p className="font-semibold text-stone-900">
+                  {isAuthenticated ? listing.ownerName : 'Login required'}
+                </p>
+                {!isAuthenticated && (
+                  <p className="text-xs text-stone-500 mt-1">
+                    Contact details are visible only to registered users.
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-2 mt-4">

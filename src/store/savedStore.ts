@@ -1,34 +1,50 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { apiFetch } from '@/lib/api'
+import type { Listing } from '@/types'
 
 interface SavedState {
   byUser: Record<string, string[]>
+  listingsByUser: Record<string, Listing[]>
+  sync: (userId: string) => Promise<void>
   toggle: (userId: string, listingId: string) => void
   isSaved: (userId: string, listingId: string) => boolean
   getSavedIds: (userId: string) => string[]
+  getSavedListings: (userId: string) => Listing[]
 }
 
-export const useSavedStore = create<SavedState>()(
-  persist(
-    (set, get) => ({
-      byUser: {
-        u1: ['3', '10', '14'],
-      },
+export const useSavedStore = create<SavedState>()((set, get) => ({
+  byUser: {},
+  listingsByUser: {},
 
-      toggle: (userId, listingId) => {
-        set(state => {
-          const current = state.byUser[userId] ?? []
-          const next = current.includes(listingId)
-            ? current.filter(id => id !== listingId)
-            : [...current, listingId]
-          return { byUser: { ...state.byUser, [userId]: next } }
-        })
-      },
+  sync: async userId => {
+    const listings = await apiFetch<Listing[]>('/me/saved-listings', { auth: true })
+    set(state => ({
+      listingsByUser: { ...state.listingsByUser, [userId]: listings },
+      byUser: { ...state.byUser, [userId]: listings.map(l => l.id) },
+    }))
+  },
 
-      isSaved: (userId, listingId) => (get().byUser[userId] ?? []).includes(listingId),
+  toggle: (userId, listingId) => {
+    const currentlySaved = get().isSaved(userId, listingId)
+    set(state => {
+      const current = state.byUser[userId] ?? []
+      const next = currentlySaved
+        ? current.filter(id => id !== listingId)
+        : [...current, listingId]
+      return { byUser: { ...state.byUser, [userId]: next } }
+    })
 
-      getSavedIds: userId => get().byUser[userId] ?? [],
-    }),
-    { name: 'rently-saved' },
-  ),
-)
+    void apiFetch(`/me/saved-listings/${listingId}`, {
+      method: currentlySaved ? 'DELETE' : 'POST',
+      auth: true,
+    }).catch(() => {
+      void get().sync(userId)
+    })
+  },
+
+  isSaved: (userId, listingId) => (get().byUser[userId] ?? []).includes(listingId),
+
+  getSavedIds: userId => get().byUser[userId] ?? [],
+
+  getSavedListings: userId => get().listingsByUser[userId] ?? [],
+}))

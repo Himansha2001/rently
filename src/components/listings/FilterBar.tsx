@@ -28,7 +28,11 @@ export default function FilterBar({ filters, onChange, resultCount }: FilterBarP
     filters.minPrice ||
     filters.maxPrice ||
     filters.minBedrooms ||
-    filters.verifiedOnly
+    filters.minBathrooms ||
+    filters.verifiedOnly ||
+    filters.lat != null ||
+    filters.lng != null ||
+    filters.radiusKm != null
 
   return (
     <div className="sticky top-[72px] z-40 bg-stone-50/95 backdrop-blur-md border-b border-stone-200 py-4">
@@ -105,6 +109,22 @@ export default function FilterBar({ filters, onChange, resultCount }: FilterBarP
               ))}
             </select>
 
+            <select
+              value={filters.minBathrooms ?? ''}
+              onChange={e =>
+                onChange({
+                  ...filters,
+                  minBathrooms: e.target.value ? Number(e.target.value) : undefined,
+                })
+              }
+              className="h-11 px-3 rounded-xl border border-stone-200 bg-white text-sm"
+            >
+              <option value="">Baths</option>
+              {[1, 2, 3, 4].map(n => (
+                <option key={n} value={n}>{n}+ baths</option>
+              ))}
+            </select>
+
             <label className="flex items-center gap-2 h-11 px-3 rounded-xl border border-stone-200 bg-white text-sm cursor-pointer">
               <input
                 type="checkbox"
@@ -122,6 +142,50 @@ export default function FilterBar({ filters, onChange, resultCount }: FilterBarP
               </Button>
             )}
           </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-[160px_160px_160px_auto] gap-2">
+          <input
+            type="number"
+            step="0.0001"
+            value={filters.lat ?? ''}
+            onChange={e =>
+              onChange({ ...filters, lat: e.target.value ? Number(e.target.value) : undefined })
+            }
+            placeholder="Latitude"
+            className="h-10 px-3 rounded-xl border border-stone-200 bg-white text-sm"
+          />
+          <input
+            type="number"
+            step="0.0001"
+            value={filters.lng ?? ''}
+            onChange={e =>
+              onChange({ ...filters, lng: e.target.value ? Number(e.target.value) : undefined })
+            }
+            placeholder="Longitude"
+            className="h-10 px-3 rounded-xl border border-stone-200 bg-white text-sm"
+          />
+          <input
+            type="number"
+            min="0.1"
+            max="100"
+            value={filters.radiusKm ?? ''}
+            onChange={e =>
+              onChange({
+                ...filters,
+                radiusKm: e.target.value ? Number(e.target.value) : undefined,
+              })
+            }
+            placeholder="Radius km"
+            className="h-10 px-3 rounded-xl border border-stone-200 bg-white text-sm"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onChange({ ...filters, lat: 6.9271, lng: 79.8612, radiusKm: 10 })}
+          >
+            Near Colombo
+          </Button>
         </div>
 
         <p className="text-sm text-stone-500 mt-3">

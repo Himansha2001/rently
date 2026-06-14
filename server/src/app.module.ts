@@ -1,0 +1,32 @@
+import { Module } from '@nestjs/common'
+import { ConfigModule, ConfigService } from '@nestjs/config'
+import { MongooseModule } from '@nestjs/mongoose'
+import { AuthModule } from './auth/auth.module'
+import { UsersModule } from './users/users.module'
+import { ListingsModule } from './listings/listings.module'
+import { AdminModule } from './admin/admin.module'
+import { MessagingModule } from './messaging/messaging.module'
+import { SavedListingsModule } from './saved-listings/saved-listings.module'
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env'],
+    }),
+    MongooseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        uri: config.getOrThrow<string>('MONGODB_URI'),
+        autoIndex: true,
+      }),
+    }),
+    UsersModule,
+    AuthModule,
+    ListingsModule,
+    AdminModule,
+    MessagingModule,
+    SavedListingsModule,
+  ],
+})
+export class AppModule {}

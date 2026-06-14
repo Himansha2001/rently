@@ -25,6 +25,8 @@ export default function MessageInbox() {
 
   const getConversationsForUser = useMessageStore(s => s.getConversationsForUser)
   const getMessages = useMessageStore(s => s.getMessages)
+  const fetchConversations = useMessageStore(s => s.fetchConversations)
+  const fetchMessages = useMessageStore(s => s.fetchMessages)
   const conversations = user ? getConversationsForUser(user.id) : []
   const sendMessage = useMessageStore(s => s.sendMessage)
   const markRead = useMessageStore(s => s.markRead)
@@ -34,7 +36,15 @@ export default function MessageInbox() {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (active && user) markRead(active.id, user.id)
+    if (user) void fetchConversations()
+  }, [user, fetchConversations])
+
+  useEffect(() => {
+    if (activeId) void fetchMessages(activeId)
+  }, [activeId, fetchMessages])
+
+  useEffect(() => {
+    if (active && user) void markRead(active.id, user.id)
   }, [active, user, markRead])
 
   useEffect(() => {
@@ -49,7 +59,7 @@ export default function MessageInbox() {
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault()
     if (!active || !user || !draft.trim()) return
-    sendMessage(active.id, user.id, draft)
+    void sendMessage(active.id, user.id, draft)
     setDraft('')
   }
 

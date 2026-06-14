@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from '@/components/layout/Layout'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
+import AdminRoute from '@/components/auth/AdminRoute'
 import HomePage from '@/pages/HomePage'
 import ListingsPage from '@/pages/ListingsPage'
 import ListingDetailPage from '@/pages/ListingDetailPage'
@@ -12,6 +13,7 @@ import NotFoundPage from '@/pages/NotFoundPage'
 
 const AccountPage = lazy(() => import('@/pages/AccountPage'))
 const CreateListingPage = lazy(() => import('@/pages/CreateListingPage'))
+const AdminPage = lazy(() => import('@/pages/AdminPage'))
 
 function PageLoader() {
   return (
@@ -51,6 +53,16 @@ export default function App() {
                   <CreateListingPage />
                 </Suspense>
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin"
+            element={
+              <AdminRoute>
+                <Suspense fallback={<PageLoader />}>
+                  <AdminPage />
+                </Suspense>
+              </AdminRoute>
             }
           />
           <Route path="*" element={<NotFoundPage />} />

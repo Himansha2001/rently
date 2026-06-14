@@ -104,6 +104,13 @@ export default function Navbar() {
                   )}
                 </Link>
               </Button>
+              {user?.roles?.includes('admin') && (
+                <Button variant={solid ? 'ghost' : 'ghost'} size="sm" asChild>
+                  <Link to="/admin" className={!solid ? 'text-white' : ''}>
+                    Admin
+                  </Link>
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -169,6 +176,11 @@ export default function Navbar() {
                       </span>
                     )}
                   </Link>
+                  {user?.roles?.includes('admin') && (
+                    <Link to="/admin" className="py-2 text-stone-700 font-medium">
+                      Admin
+                    </Link>
+                  )}
                   <button type="button" onClick={logout} className="py-2 text-left text-stone-500">
                     Sign out ({user?.name})
                   </button>
