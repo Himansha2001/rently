@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { FirebaseAuthGuard, OptionalFirebaseAuthGuard } from '../common/guards/firebase-auth.guard'
@@ -11,12 +11,12 @@ import { ListingsService } from './listings.service'
 
 @Controller('listings')
 export class ListingsController {
-  constructor(private readonly listingsService: ListingsService) {}
+  constructor(@Inject(ListingsService) private readonly listingsService: ListingsService) {}
 
   @Get()
   @UseGuards(OptionalFirebaseAuthGuard)
-  search(@Query() query: ListingQueryDto, @CurrentUser() user?: UserDocument) {
-    return this.listingsService.search(query, user)
+  search(@Query() query: ListingQueryDto = {}, @CurrentUser() user?: UserDocument) {
+    return this.listingsService.search(query ?? {}, user)
   }
 
   @Get('mine')

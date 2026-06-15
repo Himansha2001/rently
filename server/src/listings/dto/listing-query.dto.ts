@@ -25,11 +25,23 @@ export class ListingQueryDto {
 
   @IsOptional()
   @IsString()
+  search?: string
+
+  @IsOptional()
+  @IsString()
+  q?: string
+
+  @IsOptional()
+  @IsString()
   city?: string
 
   @IsOptional()
   @IsIn(['apartment', 'annex', 'room', 'condo', 'house', 'commercial'])
   propertyType?: PropertyType
+
+  @IsOptional()
+  @IsIn(['apartment', 'annex', 'room', 'condo', 'house', 'commercial'])
+  type?: PropertyType
 
   @IsOptional()
   @Type(() => Number)
@@ -63,7 +75,17 @@ export class ListingQueryDto {
   @IsOptional()
   @Transform(({ value }) => toBoolean(value))
   @IsBoolean()
+  isVerified?: boolean
+
+  @IsOptional()
+  @Transform(({ value }) => toBoolean(value))
+  @IsBoolean()
   featured?: boolean
+
+  @IsOptional()
+  @Transform(({ value }) => toBoolean(value))
+  @IsBoolean()
+  isFeatured?: boolean
 
   @IsOptional()
   @Type(() => Number)

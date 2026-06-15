@@ -20,20 +20,21 @@ export class ListingsService {
     private readonly usersService: UsersService,
   ) {}
 
-  async search(query: ListingQueryDto, viewer?: UserDocument) {
-    const page = query.page ?? 1
-    const limit = query.limit ?? 20
+  async search(query: ListingQueryDto = {}, viewer?: UserDocument) {
+    const normalizedQuery = normalizeListingQuery(query)
+    const page = normalizedQuery.page ?? 1
+    const limit = normalizedQuery.limit ?? 20
     const skip = (page - 1) * limit
-    const filter = this.buildPublicFilter(query)
+    const filter = this.buildPublicFilter(normalizedQuery)
 
-    if (hasRadiusQuery(query)) {
-      const maxDistance = Math.min(query.radiusKm ?? 10, 100) * 1000
+    if (hasRadiusQuery(normalizedQuery)) {
+      const maxDistance = Math.min(normalizedQuery.radiusKm ?? 10, 100) * 1000
       const pipeline: PipelineStage[] = [
         {
           $geoNear: {
             near: {
               type: 'Point',
-              coordinates: [query.lng, query.lat],
+              coordinates: [normalizedQuery.lng, normalizedQuery.lat],
             },
             distanceField: 'distanceMeters',
             maxDistance,
@@ -358,6 +359,21 @@ function hasRadiusQuery(query: ListingQueryDto): query is ListingQueryDto & {
   radiusKm: number
 } {
   return query.lat !== undefined && query.lng !== undefined && query.radiusKm !== undefined
+}
+
+function normalizeListingQuery(query: ListingQueryDto): ListingQueryDto {
+  const page = Math.max(1, query.page ?? 1)
+  const limit = Math.min(Math.max(1, query.limit ?? 20), 50)
+
+  return {
+    ...query,
+    query: query.query ?? query.search ?? query.q,
+    propertyType: query.propertyType ?? query.type,
+    verified: query.verified ?? query.isVerified,
+    featured: query.featured ?? query.isFeatured,
+    page,
+    limit,
+  }
 }
 
 function escapeRegex(value: string) {
