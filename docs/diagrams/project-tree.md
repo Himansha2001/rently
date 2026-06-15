@@ -20,6 +20,8 @@ graph TD
   Server --> Admin["admin/ moderation"]
   Server --> Messaging["messaging/ conversations + messages"]
   Server --> Saved["saved-listings/ bookmarks"]
+  Server --> Storage["storage/ S3-compatible uploads"]
+  Server --> Scripts["scripts/ admin bootstrap"]
 
   Docs --> Diagrams["diagrams/ Mermaid"]
 ```

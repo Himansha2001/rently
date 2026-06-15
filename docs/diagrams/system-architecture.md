@@ -8,10 +8,11 @@ flowchart LR
   API --> FirebaseAdmin["Firebase Admin SDK"]
   FirebaseAdmin --> FirebaseAuth
   API --> Mongo["MongoDB Atlas"]
+  API --> Storage["S3-compatible object storage"]
   Mongo --> Users[(users)]
   Mongo --> Listings[(listings)]
   Mongo --> Conversations[(conversations)]
   Mongo --> Messages[(messages)]
   Mongo --> Saved[(savedListings)]
-  API --> FutureStorage["Future object storage"]
+  Storage --> Images[(listing image objects)]
 ```

@@ -11,7 +11,18 @@
 
 ## Admin UI
 
-The frontend includes `/admin`, protected by client role checks for UX and backend role guards for security.
+The frontend includes `/admin`, protected by client role checks for UX and backend role guards for security. The admin listing feed uses paginated `GET /api/admin/listings?status=pending&page=1&limit=50`.
+
+## First Admin Bootstrap
+
+There is no public admin self-assignment route. Run the backend script from a trusted environment:
+
+```bash
+FIREBASE_UID=firebase-user-uid npm --prefix server run seed:admin
+ADMIN_EMAIL=admin@example.com npm --prefix server run seed:admin
+```
+
+The target user must already exist in MongoDB, which happens after a successful Firebase-authenticated session request.
 
 ## Security Rules
 
@@ -19,3 +30,4 @@ The frontend includes `/admin`, protected by client role checks for UX and backe
 - Owners cannot approve their own listing.
 - Rejection requires a reason.
 - Approval stores `approvedAt` and `approvedBy`.
+- Admin action route IDs are validated as MongoDB ObjectIds before database access.

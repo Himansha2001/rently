@@ -8,22 +8,22 @@ Stores Firebase-linked user profiles and marketplace roles.
 
 ## Listing
 
-Stores property content, price, address, GeoJSON location, amenities, image URLs, contact details, moderation status, and approval metadata.
+Stores property content, price, address, GeoJSON location, amenities, S3-backed image URLs, contact details, moderation status, and approval metadata. Listing images are uploaded to object storage first, then the returned URLs are stored in `imageUrls`.
 
 Important indexes:
 
-- `location: 2dsphere`
+- `location: 2dsphere` declared once on the listing schema
 - text index across title, description, address, city, district
 - status/filter indexes
 - owner/status index
 
 ## Conversation
 
-Stores listing-specific conversations between renter and landlord.
+Stores listing-specific conversations between renter and landlord. Responses include participant display names and only the current viewer's unread count.
 
 ## Message
 
-Stores individual messages in conversations.
+Stores individual messages in conversations. Message reads are paginated with `page` and `limit` so history is not silently truncated.
 
 ## SavedListing
 

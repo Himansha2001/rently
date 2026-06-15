@@ -22,6 +22,8 @@ Authorization: Bearer <firebase_id_token>
 - `DELETE /api/listings/:id`: owner archives listing.
 - `POST /api/listings/:id/view`: increment approved listing view count.
 
+All MongoDB ObjectId route parameters are validated before reaching Mongoose. Invalid IDs return a safe `400 Bad Request`.
+
 ## Listing Search Query Params
 
 - `query`
@@ -41,15 +43,50 @@ Authorization: Bearer <firebase_id_token>
 
 Radius is capped at 100km by backend validation.
 
+## Uploads
+
+Authentication required.
+
+- `POST /api/uploads/listing-images`
+
+Request: `multipart/form-data` with field name `images`.
+
+Rules:
+
+- Accepted MIME types: `image/jpeg`, `image/png`, `image/webp`, `image/avif`.
+- Max size: 5MB per image.
+- Max count: 10 images.
+- Storage target: S3-compatible object storage, not Firebase Storage.
+
+Response:
+
+```json
+{
+  "imageUrls": ["https://cdn.example.com/listing-images/user/year/month/file.webp"],
+  "urls": ["https://cdn.example.com/listing-images/user/year/month/file.webp"]
+}
+```
+
 ## Admin
 
 Admin role required.
 
-- `GET /api/admin/listings?status=pending`
+- `GET /api/admin/listings?status=pending&page=1&limit=50`
 - `PATCH /api/admin/listings/:id/approve`
 - `PATCH /api/admin/listings/:id/reject`
 - `PATCH /api/admin/listings/:id/feature`
 - `PATCH /api/admin/listings/:id/archive`
+
+Admin list response is paginated:
+
+```json
+{
+  "items": [],
+  "page": 1,
+  "limit": 50,
+  "total": 0
+}
+```
 
 ## Messaging
 
@@ -57,9 +94,22 @@ Authentication required.
 
 - `GET /api/conversations`
 - `POST /api/conversations`
-- `GET /api/conversations/:id/messages`
+- `GET /api/conversations/:id/messages?page=1&limit=50`
 - `POST /api/conversations/:id/messages`
 - `PATCH /api/conversations/:id/read`
+
+Message list response is paginated:
+
+```json
+{
+  "items": [],
+  "page": 1,
+  "limit": 50,
+  "total": 0
+}
+```
+
+Conversation responses include participant display names. `unreadBy` only includes unread data for the current viewer.
 
 ## Saved Listings
 

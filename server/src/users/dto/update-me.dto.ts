@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator'
+import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator'
 
 export class UpdateMeDto {
   @IsOptional()
@@ -17,7 +17,7 @@ export class UpdateMeDto {
   phone?: string
 
   @IsOptional()
-  @IsString()
+  @IsUrl()
   @MaxLength(500)
   avatarUrl?: string
 }

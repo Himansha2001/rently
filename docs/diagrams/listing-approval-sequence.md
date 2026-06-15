@@ -5,10 +5,14 @@ sequenceDiagram
   participant User
   participant Frontend
   participant API
+  participant Storage
   participant Mongo
   participant Admin
 
   User->>Frontend: Create listing and pin map
+  Frontend->>API: POST /api/uploads/listing-images
+  API->>Storage: Put listing image objects
+  API-->>Frontend: imageUrls
   Frontend->>API: POST /api/listings
   API->>Mongo: Insert listing status=pending
   API->>Mongo: Add landlord role to user

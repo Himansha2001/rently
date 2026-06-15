@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -130,6 +131,12 @@ export class ListingsService {
   async update(id: string, user: UserDocument, dto: UpdateListingDto) {
     const listing = await this.getOwnedListing(id, user)
 
+    const hasLat = Object.prototype.hasOwnProperty.call(dto, 'lat')
+    const hasLng = Object.prototype.hasOwnProperty.call(dto, 'lng')
+    if (hasLat !== hasLng) {
+      throw new BadRequestException('Both lat and lng are required to update location')
+    }
+
     if (dto.lat !== undefined && dto.lng !== undefined) {
       listing.location = {
         type: 'Point',
@@ -137,17 +144,40 @@ export class ListingsService {
       }
     }
 
-    const patch = {
-      ...dto,
-      imageUrls: dto.imageUrls,
-      status: listing.status === 'draft' ? 'draft' : 'pending',
-      rejectionReason: undefined,
-      approvedAt: undefined,
-      approvedBy: undefined,
-      isVerified: false,
+    const allowedFields: Array<keyof UpdateListingDto> = [
+      'title',
+      'description',
+      'propertyType',
+      'price',
+      'currency',
+      'address',
+      'city',
+      'district',
+      'province',
+      'bedrooms',
+      'bathrooms',
+      'areaSqFt',
+      'amenities',
+      'imageUrls',
+      'contactName',
+      'contactPhone',
+      'contactEmail',
+    ]
+
+    for (const field of allowedFields) {
+      if (Object.prototype.hasOwnProperty.call(dto, field) && dto[field] !== undefined) {
+        Object.assign(listing, { [field]: dto[field] })
+      }
     }
 
-    Object.assign(listing, patch)
+    if (listing.status === 'approved' || listing.status === 'rejected') {
+      listing.status = 'pending'
+      listing.rejectionReason = undefined
+      listing.approvedAt = undefined
+      listing.approvedBy = undefined
+      listing.isVerified = false
+    }
+
     await listing.save()
     return this.toResponse(listing, user, { includeSensitive: true })
   }
@@ -164,9 +194,22 @@ export class ListingsService {
     return { ok: true }
   }
 
-  async findForAdmin(status?: ListingStatus) {
+  async findForAdmin(status?: ListingStatus, page = 1, limit = 20) {
+    const safePage = Math.max(1, page)
+    const safeLimit = Math.min(Math.max(1, limit), 100)
+    const skip = (safePage - 1) * safeLimit
     const filter: FilterQuery<Listing> = status ? { status } : {}
-    return this.listingModel.find(filter).sort({ createdAt: -1 }).limit(100)
+    const [items, total] = await Promise.all([
+      this.listingModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(safeLimit),
+      this.listingModel.countDocuments(filter),
+    ])
+
+    return {
+      items,
+      page: safePage,
+      limit: safeLimit,
+      total,
+    }
   }
 
   async approve(id: string, admin: UserDocument) {

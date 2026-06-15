@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { Archive, Check, Star, X } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,14 +10,24 @@ import { formatLKRMonthly } from '@/lib/format'
 export default function AdminPage() {
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [rejecting, setRejecting] = useState<string | null>(null)
   const [reason, setReason] = useState('')
 
   const load = async () => {
     setLoading(true)
-    const data = await apiFetch<Listing[]>('/admin/listings?status=pending', { auth: true })
-    setListings(data)
-    setLoading(false)
+    setError(null)
+    try {
+      const data = await apiFetch<{ items: Listing[] }>('/admin/listings?status=pending&page=1&limit=50', {
+        auth: true,
+      })
+      setListings(data.items)
+    } catch {
+      setError('Could not load pending listings. Check your admin access and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -25,19 +35,65 @@ export default function AdminPage() {
   }, [])
 
   const approve = async (id: string) => {
-    await apiFetch(`/admin/listings/${id}/approve`, { method: 'PATCH', auth: true })
-    await load()
+    setActionLoading(`approve:${id}`)
+    setError(null)
+    try {
+      await apiFetch(`/admin/listings/${id}/approve`, { method: 'PATCH', auth: true })
+      await load()
+    } catch {
+      setError('Could not approve the listing. Please try again.')
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   const reject = async (id: string) => {
-    await apiFetch(`/admin/listings/${id}/reject`, {
-      method: 'PATCH',
-      auth: true,
-      body: JSON.stringify({ reason: reason || 'Rejected by moderator' }),
-    })
-    setRejecting(null)
-    setReason('')
-    await load()
+    setActionLoading(`reject:${id}`)
+    setError(null)
+    try {
+      await apiFetch(`/admin/listings/${id}/reject`, {
+        method: 'PATCH',
+        auth: true,
+        body: JSON.stringify({ reason: reason || 'Rejected by moderator' }),
+      })
+      setRejecting(null)
+      setReason('')
+      await load()
+    } catch {
+      setError('Could not reject the listing. Please try again.')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const feature = async (id: string, featured: boolean) => {
+    setActionLoading(`feature:${id}`)
+    setError(null)
+    try {
+      await apiFetch(`/admin/listings/${id}/feature`, {
+        method: 'PATCH',
+        auth: true,
+        body: JSON.stringify({ featured }),
+      })
+      await load()
+    } catch {
+      setError('Could not update featured status. Please try again.')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const archive = async (id: string) => {
+    setActionLoading(`archive:${id}`)
+    setError(null)
+    try {
+      await apiFetch(`/admin/listings/${id}/archive`, { method: 'PATCH', auth: true })
+      await load()
+    } catch {
+      setError('Could not archive the listing. Please try again.')
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   return (
@@ -53,6 +109,11 @@ export default function AdminPage() {
             <CardTitle>Pending listings</CardTitle>
           </CardHeader>
           <CardContent>
+            {error && (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
             {loading ? (
               <p className="text-stone-500">Loading pending listings...</p>
             ) : listings.length === 0 ? (
@@ -83,7 +144,11 @@ export default function AdminPage() {
                         </p>
                       </div>
                       <div className="md:w-56 flex md:flex-col gap-2">
-                        <Button onClick={() => approve(listing.id)} className="flex-1">
+                        <Button
+                          onClick={() => approve(listing.id)}
+                          className="flex-1"
+                          disabled={Boolean(actionLoading)}
+                        >
                           <Check className="w-4 h-4" />
                           Approve
                         </Button>
@@ -91,9 +156,28 @@ export default function AdminPage() {
                           variant="outline"
                           onClick={() => setRejecting(rejecting === listing.id ? null : listing.id)}
                           className="flex-1"
+                          disabled={Boolean(actionLoading)}
                         >
                           <X className="w-4 h-4" />
                           Reject
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => feature(listing.id, !listing.featured)}
+                          className="flex-1"
+                          disabled={Boolean(actionLoading)}
+                        >
+                          <Star className="w-4 h-4" />
+                          {listing.featured ? 'Unfeature' : 'Feature'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => archive(listing.id)}
+                          className="flex-1"
+                          disabled={Boolean(actionLoading)}
+                        >
+                          <Archive className="w-4 h-4" />
+                          Archive
                         </Button>
                       </div>
                     </div>
@@ -105,8 +189,12 @@ export default function AdminPage() {
                           placeholder="Reason for rejection"
                           className="flex-1 h-10 px-3 rounded-xl border border-stone-200 bg-white text-sm"
                         />
-                        <Button variant="accent" onClick={() => reject(listing.id)}>
-                          Confirm reject
+                        <Button
+                          variant="accent"
+                          onClick={() => reject(listing.id)}
+                          disabled={Boolean(actionLoading)}
+                        >
+                          {actionLoading === `reject:${listing.id}` ? 'Rejecting...' : 'Confirm reject'}
                         </Button>
                       </div>
                     )}

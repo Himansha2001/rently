@@ -18,6 +18,7 @@ Rently is a production marketplace for Sri Lanka rental properties. This documen
 
 - Firebase is used for identity only.
 - MongoDB is the primary application database.
+- Listing images use S3-compatible object storage through the backend API.
 - Firestore, Firebase Storage, Realtime Database, and Cloud Functions are not used for app data.
 - New listings are pending until an admin approves them.
 - Sensitive contact details require authentication.

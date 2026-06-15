@@ -194,7 +194,7 @@ export default function AccountPage() {
                           <div>
                             <p className="text-sm text-stone-500">Active listings</p>
                             <p className="text-2xl font-bold text-stone-900">
-                              {myListings.filter(l => l.status === 'approved' || l.status === 'active').length}
+                              {myListings.filter(l => l.status === 'approved').length}
                             </p>
                           </div>
                         </CardContent>
@@ -280,7 +280,7 @@ export default function AccountPage() {
                             <p className="text-primary-700 font-medium">
                               {formatLKRMonthly(listing.price)}
                             </p>
-                            <Badge variant={listing.status === 'approved' || listing.status === 'active' ? 'verified' : 'muted'}>
+                            <Badge variant={listing.status === 'approved' ? 'verified' : 'muted'}>
                               {listing.status}
                             </Badge>
                             {listing.rejectionReason && (

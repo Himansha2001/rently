@@ -3,6 +3,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { Roles } from '../common/decorators/roles.decorator'
 import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard'
 import { RolesGuard } from '../common/guards/roles.guard'
+import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe'
 import { ListingsService } from '../listings/listings.service'
 import type { UserDocument } from '../users/user.schema'
 import { AdminListingsQueryDto } from './dto/admin-listings-query.dto'
@@ -17,20 +18,27 @@ export class AdminController {
 
   @Get('listings')
   async listings(@Query() query: AdminListingsQueryDto, @CurrentUser() user: UserDocument) {
-    const listings = await this.listingsService.findForAdmin(query.status ?? 'pending')
-    return listings.map(listing =>
-      this.listingsService.toResponse(listing, user, { includeSensitive: true, admin: true }),
+    const result = await this.listingsService.findForAdmin(
+      query.status ?? 'pending',
+      query.page,
+      query.limit,
     )
+    return {
+      ...result,
+      items: result.items.map(listing =>
+        this.listingsService.toResponse(listing, user, { includeSensitive: true, admin: true }),
+      ),
+    }
   }
 
   @Patch('listings/:id/approve')
-  approve(@Param('id') id: string, @CurrentUser() user: UserDocument) {
+  approve(@Param('id', ParseObjectIdPipe) id: string, @CurrentUser() user: UserDocument) {
     return this.listingsService.approve(id, user)
   }
 
   @Patch('listings/:id/reject')
   reject(
-    @Param('id') id: string,
+    @Param('id', ParseObjectIdPipe) id: string,
     @CurrentUser() user: UserDocument,
     @Body() dto: RejectListingDto,
   ) {
@@ -39,7 +47,7 @@ export class AdminController {
 
   @Patch('listings/:id/feature')
   feature(
-    @Param('id') id: string,
+    @Param('id', ParseObjectIdPipe) id: string,
     @CurrentUser() user: UserDocument,
     @Body() dto: FeatureListingDto,
   ) {
@@ -47,7 +55,7 @@ export class AdminController {
   }
 
   @Patch('listings/:id/archive')
-  archive(@Param('id') id: string, @CurrentUser() user: UserDocument) {
+  archive(@Param('id', ParseObjectIdPipe) id: string, @CurrentUser() user: UserDocument) {
     return this.listingsService.archiveByAdmin(id, user)
   }
 }

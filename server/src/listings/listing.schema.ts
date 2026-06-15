@@ -55,7 +55,7 @@ export class Listing {
   @Prop({ trim: true, index: true })
   province?: string
 
-  @Prop({ required: true, type: GeoPointSchema, index: '2dsphere' })
+  @Prop({ required: true, type: GeoPointSchema })
   location: GeoPoint
 
   @Prop({ required: true, min: 0, default: 0, index: true })

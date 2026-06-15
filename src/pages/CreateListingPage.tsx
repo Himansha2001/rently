@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useListingStore } from '@/store/listingStore'
 import { AMENITIES, CITIES, PROPERTY_TYPES } from '@/utils/constants'
 import type { PropertyType } from '@/types'
+import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 const LocationPicker = lazy(() => import('@/components/map/LocationPicker'))
@@ -39,16 +40,18 @@ type FormData = z.infer<typeof schema>
 
 const STEPS = ['Basics', 'Location', 'Photos']
 
-const PLACEHOLDER_IMAGES = [
-  'https://images.unsplash.com/photo-1522708323590-24aafb2f6c5c?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1560448204-e02f11c45772?auto=format&fit=crop&w=800&q=80',
-]
+const MAX_LISTING_IMAGES = 10
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
 export default function CreateListingPage() {
   const [step, setStep] = useState(0)
   const [amenities, setAmenities] = useState<string[]>([])
   const [submitted, setSubmitted] = useState(false)
   const [locationPinned, setLocationPinned] = useState(false)
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [uploadingImages, setUploadingImages] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
   const navigate = useNavigate()
   const { user, refreshProfile } = useAuthStore()
   const { create } = useListingStore()
@@ -75,6 +78,39 @@ export default function CreateListingPage() {
     setAmenities(prev => (prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]))
   }
 
+  const onImageFilesChange = (files: FileList | null) => {
+    const nextFiles = Array.from(files ?? [])
+    setPhotoError(null)
+
+    if (nextFiles.length > MAX_LISTING_IMAGES) {
+      setPhotoError(`Select up to ${MAX_LISTING_IMAGES} images.`)
+      return
+    }
+    const invalidType = nextFiles.find(file => !ALLOWED_IMAGE_TYPES.includes(file.type))
+    if (invalidType) {
+      setPhotoError('Only JPEG, PNG, WebP, and AVIF images are allowed.')
+      return
+    }
+    const tooLarge = nextFiles.find(file => file.size > MAX_IMAGE_SIZE_BYTES)
+    if (tooLarge) {
+      setPhotoError('Each image must be 5MB or smaller.')
+      return
+    }
+
+    setImageFiles(nextFiles)
+  }
+
+  const uploadListingImages = async () => {
+    const body = new FormData()
+    imageFiles.forEach(file => body.append('images', file))
+    const response = await apiFetch<{ imageUrls: string[] }>('/uploads/listing-images', {
+      method: 'POST',
+      auth: true,
+      body,
+    })
+    return response.imageUrls
+  }
+
   const onSubmit = async (data: FormData) => {
     if (!user) return
     if (!locationPinned) {
@@ -82,21 +118,37 @@ export default function CreateListingPage() {
       setStep(1)
       return
     }
-    await create(
-      {
-        ...data,
-        propertyType: data.propertyType as PropertyType,
-        amenities,
-        images: PLACEHOLDER_IMAGES,
-        contactName: data.contactName,
-        contactPhone: data.contactPhone,
-        contactEmail: data.contactEmail || user.email,
-      },
-      user.id,
-    )
-    await refreshProfile()
-    setSubmitted(true)
-    setTimeout(() => navigate('/account?tab=listings'), 2000)
+    if (!imageFiles.length) {
+      setPhotoError('Add at least one real property photo before submitting.')
+      setStep(2)
+      return
+    }
+
+    setUploadingImages(true)
+    setPhotoError(null)
+    try {
+      const imageUrls = await uploadListingImages()
+      await create(
+        {
+          ...data,
+          propertyType: data.propertyType as PropertyType,
+          amenities,
+          images: imageUrls,
+          contactName: data.contactName,
+          contactPhone: data.contactPhone,
+          contactEmail: data.contactEmail || user.email,
+        },
+        user.id,
+      )
+      await refreshProfile()
+      setSubmitted(true)
+      setTimeout(() => navigate('/account?tab=listings'), 2000)
+    } catch (error) {
+      setPhotoError(error instanceof Error ? error.message : 'Image upload failed. Try again.')
+      setStep(2)
+    } finally {
+      setUploadingImages(false)
+    }
   }
 
   const nextStep = async () => {
@@ -341,15 +393,35 @@ export default function CreateListingPage() {
                   <CardContent>
                     <div className="border-2 border-dashed border-stone-200 rounded-2xl p-12 text-center">
                       <Upload className="w-10 h-10 text-stone-400 mx-auto mb-3" />
-                      <p className="text-stone-600 font-medium mb-1">Drag & drop photos here</p>
+                      <p className="text-stone-600 font-medium mb-1">Upload property photos</p>
                       <p className="text-stone-400 text-sm mb-4">
-                        MVP stores image URLs only. Object storage can be added later.
+                        Add up to 10 JPEG, PNG, WebP, or AVIF images. Max 5MB each.
                       </p>
-                      <div className="grid grid-cols-2 gap-2 max-w-xs mx-auto">
-                        {PLACEHOLDER_IMAGES.map(img => (
-                          <img key={img} src={img} alt="" className="rounded-lg aspect-video object-cover" />
-                        ))}
-                      </div>
+                      <Input
+                        type="file"
+                        accept={ALLOWED_IMAGE_TYPES.join(',')}
+                        multiple
+                        onChange={event => onImageFilesChange(event.target.files)}
+                        className="max-w-sm mx-auto bg-white"
+                      />
+                      {imageFiles.length > 0 && (
+                        <div className="mt-5 text-left max-w-sm mx-auto space-y-2">
+                          <p className="text-sm font-medium text-stone-700">
+                            {imageFiles.length} image{imageFiles.length === 1 ? '' : 's'} selected
+                          </p>
+                          <ul className="space-y-1 text-xs text-stone-500">
+                            {imageFiles.map(file => (
+                              <li key={`${file.name}-${file.size}`} className="truncate">
+                                {file.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {photoError && <p className="text-red-500 text-sm mt-4">{photoError}</p>}
+                      {uploadingImages && (
+                        <p className="text-primary-700 text-sm mt-4">Uploading photos...</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -373,8 +445,8 @@ export default function CreateListingPage() {
                 <ChevronRight className="w-4 h-4" />
               </Button>
             ) : (
-              <Button type="submit" variant="accent">
-                Publish listing
+              <Button type="submit" variant="accent" disabled={uploadingImages}>
+                {uploadingImages ? 'Uploading...' : 'Publish listing'}
               </Button>
             )}
           </div>

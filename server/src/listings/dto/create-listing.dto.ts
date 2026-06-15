@@ -1,5 +1,6 @@
 import {
   ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsEmail,
   IsIn,
@@ -85,19 +86,21 @@ export class CreateListingDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
+  @Max(100000)
   areaSqFt?: number
 
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(50)
   @IsString({ each: true })
+  @MaxLength(60, { each: true })
   amenities?: string[]
 
-  @IsOptional()
   @IsArray()
+  @ArrayMinSize(1)
   @ArrayMaxSize(20)
   @IsUrl({}, { each: true })
-  imageUrls?: string[]
+  imageUrls: string[]
 
   @IsString()
   @MinLength(2)

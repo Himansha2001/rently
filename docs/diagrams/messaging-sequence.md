@@ -17,7 +17,9 @@ sequenceDiagram
   API->>Mongo: Insert message, update unread counts
   Landlord->>Frontend: Open inbox
   Frontend->>API: GET /api/conversations
-  Frontend->>API: GET /api/conversations/:id/messages
+  API-->>Frontend: Conversations with participant names and viewer unread count
+  Frontend->>API: GET /api/conversations/:id/messages?page=1&limit=50
+  API-->>Frontend: Paginated messages
   Landlord->>Frontend: Mark read
   Frontend->>API: PATCH /api/conversations/:id/read
 ```

@@ -12,6 +12,8 @@ classDiagram
   class MessagingService
   class SavedListingsController
   class SavedListingsService
+  class StorageController
+  class StorageService
   class ApiClient
   class AuthStore
   class ListingRepository
@@ -25,6 +27,7 @@ classDiagram
   MessagingService --> ListingsService
   SavedListingsController --> SavedListingsService
   SavedListingsService --> ListingsService
+  StorageController --> StorageService
   AuthStore --> ApiClient
   ListingRepository --> ApiClient
 ```

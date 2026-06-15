@@ -1,10 +1,12 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
+import { Model, Types } from 'mongoose'
 import { ListingsService } from '../listings/listings.service'
+import { UsersService } from '../users/users.service'
 import type { UserDocument } from '../users/user.schema'
 import { Conversation, ConversationDocument } from './conversation.schema'
 import { CreateConversationDto } from './dto/create-conversation.dto'
+import { MessageQueryDto } from './dto/message-query.dto'
 import { SendMessageDto } from './dto/send-message.dto'
 import { Message } from './message.schema'
 
@@ -14,13 +16,17 @@ export class MessagingService {
     @InjectModel(Conversation.name) private readonly conversationModel: Model<Conversation>,
     @InjectModel(Message.name) private readonly messageModel: Model<Message>,
     private readonly listingsService: ListingsService,
+    private readonly usersService: UsersService,
   ) {}
 
   async listConversations(user: UserDocument) {
     const conversations = await this.conversationModel
       .find({ participantIds: user._id })
       .sort({ lastMessageAt: -1, updatedAt: -1 })
-    return conversations.map(conversation => this.toConversationResponse(conversation, user))
+    const participantNames = await this.getParticipantNames(conversations)
+    return conversations.map(conversation =>
+      this.toConversationResponse(conversation, user, participantNames),
+    )
   }
 
   async openConversation(user: UserDocument, dto: CreateConversationDto) {
@@ -57,20 +63,32 @@ export class MessagingService {
       { upsert: true, new: true },
     )
 
-    return this.toConversationResponse(conversation, user)
+    return this.toConversationResponse(
+      conversation,
+      user,
+      await this.getParticipantNames([conversation]),
+    )
   }
 
-  async listMessages(user: UserDocument, conversationId: string) {
+  async listMessages(user: UserDocument, conversationId: string, query: MessageQueryDto = {}) {
     await this.requireParticipant(user, conversationId)
-    const messages = await this.messageModel.find({ conversationId }).sort({ createdAt: 1 }).limit(100)
-    return messages.map(message => ({
-      id: message._id.toString(),
-      conversationId: message.conversationId.toString(),
-      senderId: message.senderId.toString(),
-      body: message.body,
-      readAt: message.readAt,
-      createdAt: message.createdAt,
-    }))
+    const page = query.page ?? 1
+    const limit = query.limit ?? 50
+    const safePage = Math.max(1, page)
+    const safeLimit = Math.min(Math.max(1, limit), 100)
+    const skip = (safePage - 1) * safeLimit
+
+    const [messages, total] = await Promise.all([
+      this.messageModel.find({ conversationId }).sort({ createdAt: 1 }).skip(skip).limit(safeLimit),
+      this.messageModel.countDocuments({ conversationId }),
+    ])
+
+    return {
+      items: messages.map(message => this.toMessageResponse(message)),
+      page: safePage,
+      limit: safeLimit,
+      total,
+    }
   }
 
   async sendMessage(user: UserDocument, conversationId: string, dto: SendMessageDto) {
@@ -94,13 +112,7 @@ export class MessagingService {
     conversation.lastMessageAt = new Date()
     await conversation.save()
 
-    return {
-      id: message._id.toString(),
-      conversationId: message.conversationId.toString(),
-      senderId: message.senderId.toString(),
-      body: message.body,
-      createdAt: message.createdAt,
-    }
+    return this.toMessageResponse(message)
   }
 
   async markRead(user: UserDocument, conversationId: string) {
@@ -111,7 +123,11 @@ export class MessagingService {
     )
     conversation.unreadCounts.set(user._id.toString(), 0)
     await conversation.save()
-    return this.toConversationResponse(conversation, user)
+    return this.toConversationResponse(
+      conversation,
+      user,
+      await this.getParticipantNames([conversation]),
+    )
   }
 
   private async requireParticipant(user: UserDocument, conversationId: string) {
@@ -123,8 +139,13 @@ export class MessagingService {
     return conversation
   }
 
-  private toConversationResponse(conversation: ConversationDocument, user: UserDocument) {
+  private toConversationResponse(
+    conversation: ConversationDocument,
+    user: UserDocument,
+    participantNames: Record<string, string> = {},
+  ) {
     const participantIds = conversation.participantIds.map(id => id.toString())
+    const viewerId = user._id.toString()
     return {
       id: conversation._id.toString(),
       listingId: conversation.listingId.toString(),
@@ -135,11 +156,43 @@ export class MessagingService {
       renterId: conversation.renterId.toString(),
       lastMessage: conversation.lastMessage,
       lastMessageAt: conversation.lastMessageAt,
-      unreadCount: conversation.unreadCounts.get(user._id.toString()) ?? 0,
-      unreadBy: Object.fromEntries(conversation.unreadCounts),
-      participantNames: Object.fromEntries(participantIds.map(id => [id, id])),
+      unreadCount: conversation.unreadCounts.get(viewerId) ?? 0,
+      unreadBy: { [viewerId]: conversation.unreadCounts.get(viewerId) ?? 0 },
+      participantNames: Object.fromEntries(
+        participantIds.map(id => [id, participantNames[id] ?? 'User']),
+      ),
       createdAt: conversation.createdAt,
       updatedAt: conversation.updatedAt,
     }
+  }
+
+  private toMessageResponse(message: Message & { _id: Types.ObjectId }) {
+    return {
+      id: message._id.toString(),
+      conversationId: message.conversationId.toString(),
+      senderId: message.senderId.toString(),
+      body: message.body,
+      readAt: message.readAt,
+      createdAt: message.createdAt,
+    }
+  }
+
+  private async getParticipantNames(conversations: ConversationDocument[]) {
+    const ids = Array.from(
+      new Map(
+        conversations
+          .flatMap(conversation => conversation.participantIds)
+          .map(id => [id.toString(), id]),
+      ).values(),
+    )
+    if (!ids.length) return {}
+
+    const users = await this.usersService.findByIds(ids)
+    return Object.fromEntries(
+      users.map(user => [
+        user._id.toString(),
+        user.displayName ?? user.name ?? user.email ?? 'User',
+      ]),
+    )
   }
 }

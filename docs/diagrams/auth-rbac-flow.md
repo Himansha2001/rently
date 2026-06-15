@@ -6,6 +6,7 @@ flowchart TD
   Guard --> Verify["Firebase Admin verifyIdToken"]
   Verify --> Upsert["Upsert MongoDB user"]
   Upsert --> Roles["Read MongoDB roles"]
+  Seed["Offline seed:admin script"] -. "$addToSet admin" .-> Roles
   Roles --> IsAdmin{"Admin route?"}
   IsAdmin -- No --> Handler["Controller handler"]
   IsAdmin -- Yes --> CheckAdmin{"roles includes admin?"}

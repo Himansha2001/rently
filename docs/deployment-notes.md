@@ -6,6 +6,7 @@
 - NestJS API: Node-capable platform with environment variables and outbound MongoDB/Firebase Admin access.
 - MongoDB: MongoDB Atlas production cluster.
 - Firebase: Authentication only.
+- Listing images: S3-compatible object storage such as AWS S3, Cloudflare R2, or Backblaze B2.
 
 ## Required Production Controls
 
@@ -14,8 +15,10 @@
 - Configure MongoDB network access securely.
 - Enable MongoDB backups.
 - Add monitoring and error tracking.
-- Add rate limiting before high traffic launch.
-- Add object storage for real listing image uploads.
+- Keep API rate limiting enabled; `POST /api/listings/:id/view` has stricter throttling because it is public.
+- Configure S3 bucket/object permissions so uploads are private to server credentials and only intended public URLs are exposed.
+- Ensure uploaded images are served from the configured `S3_PUBLIC_BASE_URL` or equivalent CDN/domain.
+- Create/verify MongoDB indexes during deployment because Mongoose `autoIndex` is disabled when `NODE_ENV=production`.
 - Add CI for frontend build and server build.
 
 ## Not Used

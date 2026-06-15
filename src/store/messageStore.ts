@@ -28,6 +28,13 @@ interface BackendConversation {
   unreadBy?: Record<string, number>
 }
 
+interface BackendPaginatedMessages {
+  items: Message[]
+  page: number
+  limit: number
+  total: number
+}
+
 function normalizeConversation(c: BackendConversation): Conversation {
   const participantIds = c.participantIds.slice(0, 2) as [string, string]
   return {
@@ -55,7 +62,11 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   },
 
   fetchMessages: async conversationId => {
-    const messages = await apiFetch<Message[]>(`/conversations/${conversationId}/messages`, { auth: true })
+    const response = await apiFetch<Message[] | BackendPaginatedMessages>(
+      `/conversations/${conversationId}/messages?page=1&limit=100`,
+      { auth: true },
+    )
+    const messages = Array.isArray(response) ? response : response.items
     set(state => ({
       messagesByConversation: {
         ...state.messagesByConversation,

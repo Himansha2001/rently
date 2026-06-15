@@ -17,6 +17,7 @@ Rently is a real production property rental marketplace for Sri Lanka. It has pu
 - In-app messaging is required.
 - Radius-based search is required.
 - Landlords must pin listing location on a map.
+- Listing creation requires at least one real uploaded property image.
 - Monetization is not required for MVP.
 
 ## Tech Stack Decisions
@@ -26,6 +27,7 @@ Rently is a real production property rental marketplace for Sri Lanka. It has pu
 - Database: MongoDB with Mongoose.
 - Auth: Firebase Authentication only.
 - Backend auth verification: Firebase Admin SDK.
+- Listing media: S3-compatible object storage via the NestJS API.
 - Do not use Firestore, Firebase Storage, Firebase Realtime Database, or Firebase Cloud Functions for app data.
 - MySQL is allowed later only when clearly justified.
 
@@ -43,12 +45,16 @@ Backend:
 ```bash
 npm --prefix server install
 npm --prefix server run dev
+npm --prefix server run seed:admin
 ```
+
+`seed:admin` requires `MONGODB_URI` and either `FIREBASE_UID` or `ADMIN_EMAIL`. It promotes an existing MongoDB user with `$addToSet` and is not a public API endpoint.
 
 ## Important Folders
 
 - `src/`: frontend app.
 - `server/`: NestJS API.
+- `server/scripts/seed-admin.ts`: offline first-admin bootstrap.
 - `docs/`: technical documentation.
 - `docs/diagrams/`: Mermaid diagrams.
 
@@ -57,7 +63,10 @@ npm --prefix server run dev
 - Do not expose secrets or commit real `.env` files.
 - Preserve existing UI unless required for backend integration.
 - Keep Firebase limited to auth.
+- Never use Firebase Storage; listing images use S3-compatible object storage.
 - Keep MongoDB as the primary data store.
 - Enforce roles on the backend, not the client.
 - Keep public listing responses sanitized.
 - Keep location data in MongoDB GeoJSON `[lng, lat]` format.
+- Validate MongoDB ObjectId route params before calling Mongoose.
+- Do not expose raw database, schema, stack trace, or storage errors to API clients.

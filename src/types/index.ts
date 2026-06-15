@@ -7,13 +7,11 @@ export type PropertyType =
   | 'commercial'
 
 export type ListingStatus =
-  | 'active'
   | 'draft'
   | 'pending'
   | 'approved'
   | 'rejected'
   | 'archived'
-  | 'rented'
 
 export type UserRole = 'user' | 'landlord' | 'admin'
 

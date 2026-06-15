@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { FirebaseAuthGuard, OptionalFirebaseAuthGuard } from '../common/guards/firebase-auth.guard'
+import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe'
 import type { UserDocument } from '../users/user.schema'
 import { CreateListingDto } from './dto/create-listing.dto'
 import { ListingQueryDto } from './dto/listing-query.dto'
@@ -25,7 +27,7 @@ export class ListingsController {
 
   @Get(':id')
   @UseGuards(OptionalFirebaseAuthGuard)
-  findOne(@Param('id') id: string, @CurrentUser() user?: UserDocument) {
+  findOne(@Param('id', ParseObjectIdPipe) id: string, @CurrentUser() user?: UserDocument) {
     return this.listingsService.findById(id, user)
   }
 
@@ -36,14 +38,15 @@ export class ListingsController {
   }
 
   @Post(':id/view')
-  incrementViews(@Param('id') id: string) {
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  incrementViews(@Param('id', ParseObjectIdPipe) id: string) {
     return this.listingsService.incrementViews(id)
   }
 
   @Patch(':id')
   @UseGuards(FirebaseAuthGuard)
   update(
-    @Param('id') id: string,
+    @Param('id', ParseObjectIdPipe) id: string,
     @CurrentUser() user: UserDocument,
     @Body() dto: UpdateListingDto,
   ) {
@@ -52,7 +55,7 @@ export class ListingsController {
 
   @Delete(':id')
   @UseGuards(FirebaseAuthGuard)
-  archive(@Param('id') id: string, @CurrentUser() user: UserDocument) {
+  archive(@Param('id', ParseObjectIdPipe) id: string, @CurrentUser() user: UserDocument) {
     return this.listingsService.archiveOwned(id, user)
   }
 }

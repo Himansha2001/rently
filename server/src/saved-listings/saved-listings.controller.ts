@@ -1,6 +1,7 @@
 import { Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard'
+import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe'
 import type { UserDocument } from '../users/user.schema'
 import { SavedListingsService } from './saved-listings.service'
 
@@ -15,12 +16,12 @@ export class SavedListingsController {
   }
 
   @Post(':listingId')
-  save(@CurrentUser() user: UserDocument, @Param('listingId') listingId: string) {
+  save(@CurrentUser() user: UserDocument, @Param('listingId', ParseObjectIdPipe) listingId: string) {
     return this.savedListingsService.save(user, listingId)
   }
 
   @Delete(':listingId')
-  remove(@CurrentUser() user: UserDocument, @Param('listingId') listingId: string) {
+  remove(@CurrentUser() user: UserDocument, @Param('listingId', ParseObjectIdPipe) listingId: string) {
     return this.savedListingsService.remove(user, listingId)
   }
 }

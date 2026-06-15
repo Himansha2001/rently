@@ -48,6 +48,10 @@ export class UsersService {
     return user
   }
 
+  async findByIds(ids: Types.ObjectId[]): Promise<UserDocument[]> {
+    return this.userModel.find({ _id: { $in: ids } })
+  }
+
   async updateMe(userId: Types.ObjectId, dto: UpdateMeDto): Promise<UserDocument> {
     const patch: Partial<User> = {}
     if (dto.displayName !== undefined) {

@@ -3,10 +3,10 @@ import type { ListingRepository } from '@/data/repositories/listingRepository'
 import type { Listing, ListingFilters } from '@/types'
 
 function applyFilters(listings: Listing[], filters?: ListingFilters): Listing[] {
-  if (!filters) return listings.filter(l => l.status === 'active')
+  if (!filters) return listings.filter(l => l.status === 'approved')
 
   return listings.filter(l => {
-    if (l.status !== 'active' && !filters.query) return false
+    if (l.status !== 'approved' && !filters.query) return false
     if (filters.query) {
       const q = filters.query.toLowerCase()
       const match =
@@ -43,7 +43,7 @@ export const mockListingRepository: ListingRepository = {
   async getFeatured(limit = 6) {
     await delay(100)
     return listings
-      .filter(l => l.status === 'active' && l.featured)
+      .filter(l => l.status === 'approved' && l.featured)
       .sort((a, b) => b.views - a.views)
       .slice(0, limit)
   },
