@@ -10,31 +10,31 @@ export type UserDocument = HydratedDocument<User>
 export class User {
   _id: Types.ObjectId
 
-  @Prop({ required: true, unique: true, index: true })
+  @Prop({ type: String, required: true, unique: true, index: true })
   firebaseUid: string
 
-  @Prop({ required: true, lowercase: true, trim: true, index: true })
+  @Prop({ type: String, required: true, lowercase: true, trim: true, index: true })
   email: string
 
-  @Prop({ trim: true })
+  @Prop({ type: String, trim: true })
   displayName?: string
 
-  @Prop({ trim: true })
+  @Prop({ type: String, trim: true })
   name?: string
 
-  @Prop({ trim: true })
+  @Prop({ type: String, trim: true })
   phone?: string
 
-  @Prop({ trim: true })
+  @Prop({ type: String, trim: true })
   avatarUrl?: string
 
-  @Prop({ type: [String], default: ['user'], index: true })
+  @Prop({ type: [String], enum: ['user', 'landlord', 'admin'], default: ['user'], index: true })
   roles: UserRole[]
 
-  @Prop({ default: false })
+  @Prop({ type: Boolean, default: false })
   isEmailVerified: boolean
 
-  @Prop({ default: 'active', enum: ['active', 'suspended', 'deleted'], index: true })
+  @Prop({ type: String, default: 'active', enum: ['active', 'suspended', 'deleted'], index: true })
   status: UserStatus
 
   createdAt: Date

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common'
@@ -28,7 +29,7 @@ const ALLOWED_IMAGE_TYPES = new Map([
 export class StorageService {
   private readonly client: S3Client
 
-  constructor(private readonly config: ConfigService) {
+  constructor(@Inject(ConfigService) private readonly config: ConfigService) {
     this.client = new S3Client({
       region: this.config.get<string>('S3_REGION') ?? 'auto',
       endpoint: this.config.get<string>('S3_ENDPOINT'),

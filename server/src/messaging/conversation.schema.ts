@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
-import { HydratedDocument, Types } from 'mongoose'
+import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose'
 
 export type ConversationDocument = HydratedDocument<Conversation>
 
@@ -7,28 +7,28 @@ export type ConversationDocument = HydratedDocument<Conversation>
 export class Conversation {
   _id: Types.ObjectId
 
-  @Prop({ type: Types.ObjectId, ref: 'Listing', required: true, index: true })
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Listing', required: true, index: true })
   listingId: Types.ObjectId
 
-  @Prop({ type: [Types.ObjectId], ref: 'User', required: true, index: true })
+  @Prop({ type: [MongooseSchema.Types.ObjectId], ref: 'User', required: true, index: true })
   participantIds: Types.ObjectId[]
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
   landlordId: Types.ObjectId
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
   renterId: Types.ObjectId
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   listingTitle: string
 
-  @Prop()
+  @Prop({ type: String })
   listingImage?: string
 
-  @Prop()
+  @Prop({ type: String })
   lastMessage?: string
 
-  @Prop()
+  @Prop({ type: Date })
   lastMessageAt?: Date
 
   @Prop({ type: Map, of: Number, default: {} })

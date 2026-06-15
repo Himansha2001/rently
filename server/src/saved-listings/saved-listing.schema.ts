@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
-import { HydratedDocument, Types } from 'mongoose'
+import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose'
 
 export type SavedListingDocument = HydratedDocument<SavedListing>
 
@@ -7,10 +7,10 @@ export type SavedListingDocument = HydratedDocument<SavedListing>
 export class SavedListing {
   _id: Types.ObjectId
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
   userId: Types.ObjectId
 
-  @Prop({ type: Types.ObjectId, ref: 'Listing', required: true, index: true })
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Listing', required: true, index: true })
   listingId: Types.ObjectId
 
   createdAt: Date
