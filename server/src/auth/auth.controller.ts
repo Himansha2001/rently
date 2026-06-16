@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Inject, Patch, Post, UseGuards } from '@nestjs/common'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard'
 import { UpdateMeDto } from '../users/dto/update-me.dto'
@@ -8,7 +8,7 @@ import { UsersService } from '../users/users.service'
 @Controller('auth')
 @UseGuards(FirebaseAuthGuard)
 export class AuthController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(@Inject(UsersService) private readonly usersService: UsersService) {}
 
   @Post('session')
   session(@CurrentUser() user: UserDocument) {

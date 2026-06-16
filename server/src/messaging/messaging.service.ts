@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import { ListingsService } from '../listings/listings.service'
@@ -15,7 +15,9 @@ export class MessagingService {
   constructor(
     @InjectModel(Conversation.name) private readonly conversationModel: Model<Conversation>,
     @InjectModel(Message.name) private readonly messageModel: Model<Message>,
+    @Inject(ListingsService)
     private readonly listingsService: ListingsService,
+    @Inject(UsersService)
     private readonly usersService: UsersService,
   ) {}
 

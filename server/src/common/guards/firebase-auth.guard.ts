@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common'
@@ -11,7 +12,8 @@ import type { RequestWithUser } from '../types/request-with-user'
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
   constructor(
-    private readonly firebaseAdmin: FirebaseAdminService,
+    @Inject(FirebaseAdminService) private readonly firebaseAdminService: FirebaseAdminService,
+    @Inject(UsersService)
     private readonly usersService: UsersService,
   ) {}
 
@@ -24,7 +26,7 @@ export class FirebaseAuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing Authorization bearer token')
     }
 
-    const decoded = await this.firebaseAdmin.verifyIdToken(token)
+    const decoded = await this.firebaseAdminService.verifyIdToken(token)
     request.user = await this.usersService.upsertFromFirebaseToken(decoded)
     return true
   }
@@ -33,7 +35,8 @@ export class FirebaseAuthGuard implements CanActivate {
 @Injectable()
 export class OptionalFirebaseAuthGuard implements CanActivate {
   constructor(
-    private readonly firebaseAdmin: FirebaseAdminService,
+    @Inject(FirebaseAdminService) private readonly firebaseAdminService: FirebaseAdminService,
+    @Inject(UsersService)
     private readonly usersService: UsersService,
   ) {}
 
@@ -43,7 +46,7 @@ export class OptionalFirebaseAuthGuard implements CanActivate {
 
     if (!token) return true
 
-    const decoded = await this.firebaseAdmin.verifyIdToken(token)
+    const decoded = await this.firebaseAdminService.verifyIdToken(token)
     request.user = await this.usersService.upsertFromFirebaseToken(decoded)
     return true
   }

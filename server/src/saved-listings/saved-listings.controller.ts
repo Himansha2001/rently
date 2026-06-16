@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common'
+import { Controller, Delete, Get, Inject, Param, Post, UseGuards } from '@nestjs/common'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard'
 import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe'
@@ -8,7 +8,7 @@ import { SavedListingsService } from './saved-listings.service'
 @Controller('me/saved-listings')
 @UseGuards(FirebaseAuthGuard)
 export class SavedListingsController {
-  constructor(private readonly savedListingsService: SavedListingsService) {}
+  constructor(@Inject(SavedListingsService) private readonly savedListingsService: SavedListingsService) {}
 
   @Get()
   list(@CurrentUser() user: UserDocument) {

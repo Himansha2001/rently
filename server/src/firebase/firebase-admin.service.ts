@@ -1,10 +1,10 @@
-import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common'
+import { Inject, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as admin from 'firebase-admin'
 
 @Injectable()
 export class FirebaseAdminService {
-  constructor(private readonly config: ConfigService) {}
+  constructor(@Inject(ConfigService) private readonly config: ConfigService) {}
 
   async verifyIdToken(token: string) {
     try {

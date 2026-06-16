@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Inject, Param, Patch, Query, UseGuards } from '@nestjs/common'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { Roles } from '../common/decorators/roles.decorator'
 import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard'
@@ -14,7 +14,7 @@ import { RejectListingDto } from './dto/reject-listing.dto'
 @UseGuards(FirebaseAuthGuard, RolesGuard)
 @Roles('admin')
 export class AdminController {
-  constructor(private readonly listingsService: ListingsService) {}
+  constructor(@Inject(ListingsService) private readonly listingsService: ListingsService) {}
 
   @Get('listings')
   async listings(@Query() query: AdminListingsQueryDto, @CurrentUser() user: UserDocument) {

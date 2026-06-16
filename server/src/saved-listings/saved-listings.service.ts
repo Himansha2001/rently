@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model } from 'mongoose'
 import { ListingsService } from '../listings/listings.service'
@@ -9,6 +9,7 @@ import { SavedListing } from './saved-listing.schema'
 export class SavedListingsService {
   constructor(
     @InjectModel(SavedListing.name) private readonly savedListingModel: Model<SavedListing>,
+    @Inject(ListingsService)
     private readonly listingsService: ListingsService,
   ) {}
 

@@ -1,5 +1,6 @@
 import {
   Controller,
+  Inject,
   Post,
   UploadedFiles,
   UseGuards,
@@ -15,7 +16,7 @@ import { StorageService, UploadedImageFile } from './storage.service'
 @Controller('uploads')
 @UseGuards(FirebaseAuthGuard)
 export class StorageController {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(@Inject(StorageService) private readonly storageService: StorageService) {}
 
   @Post('listing-images')
   @UseInterceptors(

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
@@ -17,6 +18,7 @@ import { Listing, ListingDocument, ListingStatus } from './listing.schema'
 export class ListingsService {
   constructor(
     @InjectModel(Listing.name) private readonly listingModel: Model<Listing>,
+    @Inject(UsersService)
     private readonly usersService: UsersService,
   ) {}
 

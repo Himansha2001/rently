@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard'
 import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe'
@@ -11,7 +11,7 @@ import { MessagingService } from './messaging.service'
 @Controller('conversations')
 @UseGuards(FirebaseAuthGuard)
 export class MessagingController {
-  constructor(private readonly messagingService: MessagingService) {}
+  constructor(@Inject(MessagingService) private readonly messagingService: MessagingService) {}
 
   @Get()
   list(@CurrentUser() user: UserDocument) {
