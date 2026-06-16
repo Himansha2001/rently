@@ -19,24 +19,31 @@ export class UsersService {
       decoded.name ??
       (typeof decoded.firebase?.sign_in_provider === 'string' ? email.split('@')[0] : undefined)
 
+    const profileUpdate: Partial<User> = {
+      email,
+      isEmailVerified: decoded.email_verified ?? false,
+    }
+
+    if (displayName !== undefined) {
+      profileUpdate.displayName = displayName
+      profileUpdate.name = displayName
+    }
+
+    if (decoded.picture !== undefined) {
+      profileUpdate.avatarUrl = decoded.picture
+    }
+
     const user = await this.userModel.findOneAndUpdate(
       { firebaseUid: decoded.uid },
       {
         $setOnInsert: {
           firebaseUid: decoded.uid,
-          email,
           roles: ['user'],
           status: 'active',
         },
-        $set: {
-          email,
-          displayName,
-          name: displayName,
-          avatarUrl: decoded.picture,
-          isEmailVerified: decoded.email_verified ?? false,
-        },
+        $set: profileUpdate,
       },
-      { new: true, upsert: true },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
     )
 
     return user
