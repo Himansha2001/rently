@@ -338,6 +338,7 @@ export class ListingsService {
         { address: regex },
         { city: regex },
         { district: regex },
+        { province: regex },
       ]
     }
     if (query.city) filter.city = query.city

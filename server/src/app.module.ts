@@ -9,6 +9,7 @@ import { AdminModule } from './admin/admin.module'
 import { MessagingModule } from './messaging/messaging.module'
 import { SavedListingsModule } from './saved-listings/saved-listings.module'
 import { StorageModule } from './storage/storage.module'
+import { LocationsModule } from './locations/locations.module'
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { StorageModule } from './storage/storage.module'
     MessagingModule,
     SavedListingsModule,
     StorageModule,
+    LocationsModule,
   ],
 })
 export class AppModule {}

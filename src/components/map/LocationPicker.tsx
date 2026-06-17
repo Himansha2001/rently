@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
@@ -25,6 +25,16 @@ function MapClickHandler({ onPick }: { onPick: (lat: number, lng: number) => voi
   return null
 }
 
+function MapCenterSync({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap()
+
+  useEffect(() => {
+    map.setView([lat, lng], map.getZoom(), { animate: true })
+  }, [lat, lng, map])
+
+  return null
+}
+
 interface LocationPickerProps {
   lat: number
   lng: number
@@ -43,8 +53,22 @@ export default function LocationPicker({ lat, lng, onChange }: LocationPickerPro
       className="w-full h-64 rounded-xl z-0"
       scrollWheelZoom
     >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <Marker position={[lat, lng]} />
+      <MapCenterSync lat={lat} lng={lng} />
+      <TileLayer
+        attribution="&copy; OpenStreetMap contributors"
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <Marker
+        position={[lat, lng]}
+        draggable
+        eventHandlers={{
+          dragend(event) {
+            const marker = event.target as L.Marker
+            const next = marker.getLatLng()
+            onChange(next.lat, next.lng)
+          },
+        }}
+      />
       <MapClickHandler onPick={onChange} />
     </MapContainer>
   )

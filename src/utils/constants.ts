@@ -15,6 +15,18 @@ export const CITIES = [
   'Battaramulla',
 ] as const
 
+export const SRI_LANKAN_PROVINCES = [
+  'Western Province',
+  'Central Province',
+  'Southern Province',
+  'Northern Province',
+  'Eastern Province',
+  'North Western Province',
+  'North Central Province',
+  'Uva Province',
+  'Sabaragamuwa Province',
+] as const
+
 export const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
   { value: 'apartment', label: 'Apartment' },
   { value: 'annex', label: 'Annex' },

@@ -115,6 +115,13 @@ export class Listing {
 
 export const ListingSchema = SchemaFactory.createForClass(Listing)
 ListingSchema.index({ location: '2dsphere' })
-ListingSchema.index({ title: 'text', description: 'text', address: 'text', city: 'text', district: 'text' })
+ListingSchema.index({
+  title: 'text',
+  description: 'text',
+  address: 'text',
+  city: 'text',
+  district: 'text',
+  province: 'text',
+})
 ListingSchema.index({ status: 1, city: 1, propertyType: 1, price: 1 })
 ListingSchema.index({ ownerId: 1, status: 1, createdAt: -1 })

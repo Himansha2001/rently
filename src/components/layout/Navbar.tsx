@@ -21,6 +21,10 @@ export default function Navbar() {
   const unreadMessages = useMessageStore(s =>
     user ? s.getUnreadCount(user.id) : 0,
   )
+  const solid = scrolled || !isHome
+  const heroActionClass = !solid
+    ? 'border border-white/30 text-white hover:bg-white hover:text-primary-950 focus-visible:bg-white focus-visible:text-primary-950 [&_svg]:text-current'
+    : undefined
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -31,8 +35,6 @@ export default function Navbar() {
   useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
-
-  const solid = scrolled || !isHome
 
   return (
     <header
@@ -87,14 +89,14 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {isAuthenticated ? (
             <>
-              <Button variant={solid ? 'outline' : 'ghost'} size="sm" asChild>
-                <Link to="/listings/new" className={!solid ? 'text-white border-white/40' : ''}>
+              <Button variant={solid ? 'outline' : 'ghost'} size="sm" asChild className={heroActionClass}>
+                <Link to="/listings/new">
                   <Plus className="w-4 h-4" />
                   List Property
                 </Link>
               </Button>
-              <Button variant={solid ? 'ghost' : 'ghost'} size="sm" asChild className="relative">
-                <Link to="/account" className={!solid ? 'text-white' : ''}>
+              <Button variant="ghost" size="sm" asChild className={cn('relative', heroActionClass)}>
+                <Link to="/account">
                   <User className="w-4 h-4" />
                   Account
                   {unreadMessages > 0 && (
@@ -105,8 +107,8 @@ export default function Navbar() {
                 </Link>
               </Button>
               {user?.roles?.includes('admin') && (
-                <Button variant={solid ? 'ghost' : 'ghost'} size="sm" asChild>
-                  <Link to="/admin" className={!solid ? 'text-white' : ''}>
+                <Button variant="ghost" size="sm" asChild className={heroActionClass}>
+                  <Link to="/admin">
                     Admin
                   </Link>
                 </Button>
@@ -115,15 +117,16 @@ export default function Navbar() {
                 variant="ghost"
                 size="sm"
                 onClick={logout}
-                className={!solid ? 'text-white/80' : ''}
+                className={heroActionClass}
+                aria-label="Sign out"
               >
                 <LogOut className="w-4 h-4" />
               </Button>
             </>
           ) : (
             <>
-              <Button variant={solid ? 'ghost' : 'ghost'} size="sm" asChild>
-                <Link to="/login" className={!solid ? 'text-white' : ''}>
+              <Button variant="ghost" size="sm" asChild className={heroActionClass}>
+                <Link to="/login">
                   <LogIn className="w-4 h-4" />
                   Sign in
                 </Link>

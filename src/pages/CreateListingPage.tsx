@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,9 +11,9 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/store/authStore'
 import { useListingStore } from '@/store/listingStore'
-import { AMENITIES, CITIES, PROPERTY_TYPES } from '@/utils/constants'
+import { AMENITIES, CITIES, PROPERTY_TYPES, SRI_LANKAN_PROVINCES } from '@/utils/constants'
 import type { PropertyType } from '@/types'
-import { apiFetch } from '@/lib/api'
+import { ApiError, apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 const LocationPicker = lazy(() => import('@/components/map/LocationPicker'))
@@ -26,6 +26,7 @@ const schema = z.object({
   address: z.string().min(5),
   city: z.string().min(2),
   district: z.string().min(2),
+  province: z.string().min(2, 'Province is required'),
   lat: z.number(),
   lng: z.number(),
   bedrooms: z.number().min(0),
@@ -44,6 +45,38 @@ const MAX_LISTING_IMAGES = 10
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
+interface GeocodeResult {
+  latitude: number
+  longitude: number
+  displayName?: string
+  source?: string
+}
+
+type GeocodeMessage = {
+  tone: 'success' | 'warning' | 'error'
+  text: string
+}
+
+function normalizeLocationPart(value?: string) {
+  return value?.trim().replace(/\s+/g, ' ') ?? ''
+}
+
+function buildLocationSignature(
+  address?: string,
+  city?: string,
+  district?: string,
+  province?: string,
+) {
+  return [address, city, district, province]
+    .map(normalizeLocationPart)
+    .join('|')
+}
+
+function appendParam(params: URLSearchParams, key: string, value?: string) {
+  const normalized = normalizeLocationPart(value)
+  if (normalized) params.set(key, normalized)
+}
+
 export default function CreateListingPage() {
   const [step, setStep] = useState(0)
   const [amenities, setAmenities] = useState<string[]>([])
@@ -52,6 +85,9 @@ export default function CreateListingPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [uploadingImages, setUploadingImages] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
+  const [geocoding, setGeocoding] = useState(false)
+  const [geocodeMessage, setGeocodeMessage] = useState<GeocodeMessage | null>(null)
+  const manualPinSignatureRef = useRef<string | null>(null)
   const navigate = useNavigate()
   const { user, refreshProfile } = useAuthStore()
   const { create } = useListingStore()
@@ -64,6 +100,7 @@ export default function CreateListingPage() {
       lng: 79.8612,
       city: 'Colombo',
       district: 'Colombo',
+      province: 'Western Province',
       bedrooms: 2,
       bathrooms: 1,
       contactName: user?.name ?? '',
@@ -73,9 +110,93 @@ export default function CreateListingPage() {
   })
   const pickedLat = useWatch({ control: form.control, name: 'lat' })
   const pickedLng = useWatch({ control: form.control, name: 'lng' })
+  const watchedAddress = useWatch({ control: form.control, name: 'address' })
+  const watchedCity = useWatch({ control: form.control, name: 'city' })
+  const watchedDistrict = useWatch({ control: form.control, name: 'district' })
+  const watchedProvince = useWatch({ control: form.control, name: 'province' })
+  const currentLocationSignature = buildLocationSignature(
+    watchedAddress,
+    watchedCity,
+    watchedDistrict,
+    watchedProvince,
+  )
+
+  useEffect(() => {
+    const address = normalizeLocationPart(watchedAddress)
+    const signature = buildLocationSignature(
+      watchedAddress,
+      watchedCity,
+      watchedDistrict,
+      watchedProvince,
+    )
+
+    if (address.length < 5) {
+      setGeocoding(false)
+      setGeocodeMessage(null)
+      return
+    }
+
+    const params = new URLSearchParams()
+    appendParam(params, 'address', watchedAddress)
+    appendParam(params, 'city', watchedCity)
+    appendParam(params, 'district', watchedDistrict)
+    appendParam(params, 'province', watchedProvince)
+
+    const controller = new AbortController()
+    const timer = window.setTimeout(async () => {
+      setGeocoding(true)
+      setGeocodeMessage(null)
+
+      try {
+        const result = await apiFetch<GeocodeResult>(`/locations/geocode?${params.toString()}`, {
+          signal: controller.signal,
+        })
+
+        if (manualPinSignatureRef.current === signature) {
+          return
+        }
+
+        form.setValue('lat', result.latitude, { shouldDirty: true, shouldValidate: true })
+        form.setValue('lng', result.longitude, { shouldDirty: true, shouldValidate: true })
+        setLocationPinned(true)
+        setGeocodeMessage({
+          tone: 'success',
+          text: 'Approximate location found. You can adjust the pin manually.',
+        })
+      } catch (error) {
+        if (controller.signal.aborted) return
+
+        setGeocodeMessage({
+          tone: error instanceof ApiError && error.status === 404 ? 'warning' : 'error',
+          text:
+            error instanceof ApiError && error.status === 404
+              ? 'No approximate location found. Keep the current pin or adjust it manually.'
+              : 'Location lookup is unavailable. You can still pin the property manually.',
+        })
+      } finally {
+        if (!controller.signal.aborted) setGeocoding(false)
+      }
+    }, 800)
+
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [form, watchedAddress, watchedCity, watchedDistrict, watchedProvince])
 
   const toggleAmenity = (a: string) => {
     setAmenities(prev => (prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]))
+  }
+
+  const handleLocationChange = (lat: number, lng: number) => {
+    manualPinSignatureRef.current = currentLocationSignature
+    form.setValue('lat', lat, { shouldDirty: true, shouldValidate: true })
+    form.setValue('lng', lng, { shouldDirty: true, shouldValidate: true })
+    setLocationPinned(true)
+    setGeocodeMessage({
+      tone: 'success',
+      text: 'Pin updated. Address auto-search will run again if the address fields change.',
+    })
   }
 
   const onImageFilesChange = (files: FileList | null) => {
@@ -165,7 +286,7 @@ export default function CreateListingPage() {
         'contactPhone',
         'contactEmail',
       ],
-      ['address', 'city', 'district', 'lat', 'lng'],
+      ['address', 'city', 'district', 'province', 'lat', 'lng'],
       [],
     ]
     const valid = await form.trigger(fields[step])
@@ -335,10 +456,11 @@ export default function CreateListingPage() {
                       <Label htmlFor="address">Address</Label>
                       <Input id="address" {...form.register('address')} />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid sm:grid-cols-3 gap-4">
                       <div>
-                        <Label>City</Label>
+                        <Label htmlFor="city">City</Label>
                         <select
+                          id="city"
                           {...form.register('city')}
                           className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm"
                         >
@@ -351,20 +473,48 @@ export default function CreateListingPage() {
                         <Label htmlFor="district">District</Label>
                         <Input id="district" {...form.register('district')} />
                       </div>
+                      <div>
+                        <Label htmlFor="province">Province</Label>
+                        <select
+                          id="province"
+                          {...form.register('province')}
+                          className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm"
+                        >
+                          {SRI_LANKAN_PROVINCES.map(province => (
+                            <option key={province} value={province}>{province}</option>
+                          ))}
+                        </select>
+                        {form.formState.errors.province && (
+                          <p className="text-red-500 text-xs mt-1">{form.formState.errors.province.message}</p>
+                        )}
+                      </div>
                     </div>
                     <div>
-                      <Label>Pin on map (click to set location)</Label>
+                      <Label>Pin on map (click or drag to set location)</Label>
                       <Suspense fallback={<div className="h-64 bg-stone-200 rounded-xl animate-pulse" />}>
                         <LocationPicker
                           lat={pickedLat}
                           lng={pickedLng}
-                          onChange={(lat, lng) => {
-                            form.setValue('lat', lat)
-                            form.setValue('lng', lng)
-                            setLocationPinned(true)
-                          }}
+                          onChange={handleLocationChange}
                         />
                       </Suspense>
+                      {geocoding && (
+                        <p className="text-primary-700 text-sm mt-2">
+                          Finding an approximate location from the address...
+                        </p>
+                      )}
+                      {geocodeMessage && (
+                        <p
+                          className={cn(
+                            'text-sm mt-2',
+                            geocodeMessage.tone === 'success' && 'text-emerald-700',
+                            geocodeMessage.tone === 'warning' && 'text-amber-700',
+                            geocodeMessage.tone === 'error' && 'text-red-600',
+                          )}
+                        >
+                          {geocodeMessage.text}
+                        </p>
+                      )}
                       {!locationPinned && (
                         <p className="text-amber-700 text-sm mt-2">
                           Click the map to confirm the exact property location.
