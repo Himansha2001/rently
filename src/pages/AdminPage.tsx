@@ -1,11 +1,26 @@
 import { useEffect, useState } from 'react'
 import { Archive, Check, Star, X } from 'lucide-react'
-import { apiFetch } from '@/lib/api'
+import { ApiError, apiFetch } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { Listing } from '@/types'
 import { formatLKRMonthly } from '@/lib/format'
+
+const SELF_APPROVAL_ERROR = 'Owner cannot approve their own listing'
+
+function getActionErrorMessage(error: unknown, fallback: string) {
+  if (!(error instanceof ApiError)) return fallback
+
+  const message = error.message.trim()
+  if (!message) return fallback
+
+  if (message.replace(/\.$/, '') === SELF_APPROVAL_ERROR) {
+    return 'Owners cannot approve their own listings. Another admin must review this listing.'
+  }
+
+  return message
+}
 
 export default function AdminPage() {
   const [listings, setListings] = useState<Listing[]>([])
@@ -40,8 +55,8 @@ export default function AdminPage() {
     try {
       await apiFetch(`/admin/listings/${id}/approve`, { method: 'PATCH', auth: true })
       await load()
-    } catch {
-      setError('Could not approve the listing. Please try again.')
+    } catch (error) {
+      setError(getActionErrorMessage(error, 'Could not approve the listing. Please try again.'))
     } finally {
       setActionLoading(null)
     }
@@ -59,8 +74,8 @@ export default function AdminPage() {
       setRejecting(null)
       setReason('')
       await load()
-    } catch {
-      setError('Could not reject the listing. Please try again.')
+    } catch (error) {
+      setError(getActionErrorMessage(error, 'Could not reject the listing. Please try again.'))
     } finally {
       setActionLoading(null)
     }
@@ -76,8 +91,8 @@ export default function AdminPage() {
         body: JSON.stringify({ featured }),
       })
       await load()
-    } catch {
-      setError('Could not update featured status. Please try again.')
+    } catch (error) {
+      setError(getActionErrorMessage(error, 'Could not update featured status. Please try again.'))
     } finally {
       setActionLoading(null)
     }
@@ -89,8 +104,8 @@ export default function AdminPage() {
     try {
       await apiFetch(`/admin/listings/${id}/archive`, { method: 'PATCH', auth: true })
       await load()
-    } catch {
-      setError('Could not archive the listing. Please try again.')
+    } catch (error) {
+      setError(getActionErrorMessage(error, 'Could not archive the listing. Please try again.'))
     } finally {
       setActionLoading(null)
     }
