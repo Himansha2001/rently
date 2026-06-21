@@ -23,7 +23,7 @@ import { useSavedStore } from '@/store/savedStore'
 import { formatLKRMonthly } from '@/lib/format'
 import { PROPERTY_TYPES } from '@/utils/constants'
 
-const ListingsMap = lazy(() => import('@/components/listings/ListingsMap'))
+const ListingLocationMap = lazy(() => import('@/components/listings/ListingLocationMap'))
 
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -172,7 +172,7 @@ export default function ListingDetailPage() {
             <div>
               <h2 className="font-display text-xl font-bold mb-4">Location</h2>
               <Suspense fallback={<Skeleton className="h-64 w-full rounded-2xl" />}>
-                <ListingsMap listings={[listing]} className="h-72" />
+                <ListingLocationMap lat={listing.lat} lng={listing.lng} />
               </Suspense>
             </div>
           </div>
